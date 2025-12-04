@@ -183,7 +183,36 @@ impl zed_extension_api::Extension for OxcExtension {
         worktree: &zed_extension_api::Worktree,
     ) -> Result<Option<serde_json::Value>> {
         let settings = LspSettings::for_worktree(language_server_id.as_ref(), worktree)?;
-        Ok(settings.initialization_options)
+
+        // Transform settings to the format expected by oxc_language_server
+        // oxc_language_server expects either:
+        // 1. Vec<WorkspaceOption> with workspace_uri and options (array format)
+        // 2. { settings: { ... } } with root_uri (deprecated object format)
+        //
+        // Zed provides initialization_options from settings.json, so we need to
+        // extract the "options" or "settings" key and wrap it properly.
+        let init_options = settings.initialization_options.and_then(|data| {
+            // If user provided Vec<WorkspaceOption> array format, pass it through
+            if data.is_array() {
+                return Some(data);
+            }
+            // If user provided "options" key, use it as settings
+            if let Some(options) = data.get("options") {
+                return Some(serde_json::json!({
+                    "settings": options.clone()
+                }));
+            }
+            // If user provided "settings" key, pass it through
+            if data.get("settings").is_some() {
+                return Some(data);
+            }
+            // Otherwise, treat the whole object as settings
+            Some(serde_json::json!({
+                "settings": data
+            }))
+        });
+
+        Ok(init_options)
     }
 }
 
