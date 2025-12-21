@@ -1,190 +1,128 @@
-use std::{
-    fs,
-    path::{Path, PathBuf},
-};
+mod lsp;
+mod oxfmt;
+mod oxlint;
+
+use crate::lsp::{ZedLspSupport, OXFMT_SERVER_ID, OXLINT_SERVER_ID};
+use crate::oxfmt::ZedOxfmtLsp;
+use crate::oxlint::ZedOxlintLsp;
+use log::Level;
+use serde_json::Value;
+use simple_logger::init_with_level;
+use std::sync::{Arc, RwLock};
 use zed_extension_api::{
-    self as zed, LanguageServerId, Result,
-    serde_json::{self},
-    settings::LspSettings,
+    register_extension, serde_json::{self}, Command, Extension, LanguageServerId, Result,
+    Worktree,
 };
 
-// the general expected server path (excluded for windows)
-const WORKTREE_SERVER_PATH: &str = "node_modules/oxlint/bin/oxc_language_server";
-
-const PACKAGE_NAME: &str = "oxlint";
-
-struct OxcExtension;
+struct OxcExtension {
+    oxfmt_lsp: Arc<RwLock<ZedOxfmtLsp>>,
+    oxlint_lsp: Arc<RwLock<ZedOxlintLsp>>,
+}
 
 impl OxcExtension {
-    fn extension_server_exists(&self, path: &Path) -> bool {
-        fs::metadata(path).is_ok_and(|stat| stat.is_file())
+    fn is_oxfmt_language_server(&self, language_server_id: &LanguageServerId) -> bool {
+        language_server_id.as_ref() == OXFMT_SERVER_ID
     }
 
-    fn binary_specifier(&self) -> Result<String, String> {
-        let (platform, arch) = zed::current_platform();
+    fn is_oxlint_language_server(&self, language_server_id: &LanguageServerId) -> bool {
+        language_server_id.as_ref() == OXLINT_SERVER_ID
+    }
 
-        let binary_name = match platform {
-            zed::Os::Windows => "oxc_language_server.exe",
-            _ => "oxc_language_server",
-        };
-
-        // Zed does not currently provide an API to determine whether it is gnu or musl,
-        // So on Linux you need to run the sh (./node_modules/.bin/oxc_language_server) script.
-        if let zed::Os::Linux = platform {
-            return Ok(".bin/oxc_language_server".to_string());
+    fn update_oxfmt_language_server_if_needed(
+        &self,
+        language_server_id: &LanguageServerId,
+        worktree: &Worktree,
+    ) -> Result<()> {
+        let zed_oxfmt_lsp = self.oxfmt_lsp.read().unwrap();
+        if !zed_oxfmt_lsp.exe_exists(worktree)? {
+            zed_oxfmt_lsp.update_extension_language_server_if_outdated(language_server_id)?;
         }
-
-        Ok(format!(
-            "@oxlint/{platform}-{arch}{build}/{binary}",
-            platform = match platform {
-                zed::Os::Mac => "darwin",
-                zed::Os::Linux => "linux",
-                zed::Os::Windows => "win32",
-            },
-            arch = match arch {
-                zed::Architecture::Aarch64 => "arm64",
-                zed::Architecture::X8664 => "x64",
-                _ => return Err(format!("unsupported architecture: {arch:?}")),
-            },
-            build = match platform {
-                zed::Os::Linux => "-gnu",
-                _ => "",
-            },
-            binary = binary_name,
-        ))
+        Ok(())
     }
 
-    fn workspace_oxc_exists(&self, worktree: &zed::Worktree) -> bool {
-        // This is a workaround, as reading the file from wasm doesn't work.
-        // Instead we try to read the `package.json`, see if `oxlint` is installed
-        let package_json = worktree
-            .read_text_file("package.json")
-            .unwrap_or(String::from(r#"{}"#));
-
-        let package_json: Option<serde_json::Value> =
-            serde_json::from_str(package_json.as_str()).ok();
-
-        package_json.is_some_and(|f| {
-            !f["dependencies"][PACKAGE_NAME].is_null()
-                || !f["devDependencies"][PACKAGE_NAME].is_null()
-        })
-    }
-
-    fn check_oxc_updates(&mut self, language_server_id: &LanguageServerId) -> Result<()> {
-        // fallback to extension owned oxlint
-        zed::set_language_server_installation_status(
-            language_server_id,
-            &zed::LanguageServerInstallationStatus::CheckingForUpdate,
-        );
-
-        let extension_server_path = &Path::new("./node_modules").join(self.binary_specifier()?);
-        let version = zed::npm_package_latest_version(PACKAGE_NAME)?;
-
-        if !self.extension_server_exists(extension_server_path)
-            || zed::npm_package_installed_version(PACKAGE_NAME)?.as_ref() != Some(&version)
-        {
-            zed::set_language_server_installation_status(
-                language_server_id,
-                &zed::LanguageServerInstallationStatus::Downloading,
-            );
-            let result = zed::npm_install_package(PACKAGE_NAME, &version);
-            match result {
-                Ok(()) => {
-                    if !self.extension_server_exists(extension_server_path) {
-                        Err(format!(
-                            "installed package '{PACKAGE_NAME}' did not contain expected path '{extension_server_path:?}'",
-                        ))?;
-                    }
-                }
-                Err(error) => {
-                    if !self.extension_server_exists(extension_server_path) {
-                        Err(format!(
-                            "failed to install package '{PACKAGE_NAME}': {error}"
-                        ))?;
-                    }
-                }
-            }
+    fn update_oxlint_language_server_if_needed(
+        &self,
+        language_server_id: &LanguageServerId,
+        worktree: &Worktree,
+    ) -> Result<()> {
+        let zed_oxlint_lsp = self.oxlint_lsp.read().unwrap();
+        if !zed_oxlint_lsp.exe_exists(worktree)? {
+            zed_oxlint_lsp.update_extension_language_server_if_outdated(language_server_id)?;
         }
-
         Ok(())
     }
 }
 
-impl zed_extension_api::Extension for OxcExtension {
+impl Extension for OxcExtension {
     fn new() -> Self
     where
         Self: Sized,
     {
-        Self
+        init_with_level(Level::Debug).unwrap();
+
+        Self {
+            oxfmt_lsp: Arc::new(RwLock::new(ZedOxfmtLsp::new())),
+            oxlint_lsp: Arc::new(RwLock::new(ZedOxlintLsp::new())),
+        }
     }
 
     fn language_server_command(
         &mut self,
-        language_server_id: &zed_extension_api::LanguageServerId,
-        worktree: &zed_extension_api::Worktree,
-    ) -> zed_extension_api::Result<zed_extension_api::Command> {
-        let settings = LspSettings::for_worktree(language_server_id.as_ref(), worktree)?;
-
-        let mut args = vec![];
-
-        // check and run oxlint with custom binary
-        if let Some(binary) = settings.binary {
-            return Ok(zed::Command {
-                command: binary
-                    .path
-                    .map_or(WORKTREE_SERVER_PATH.to_string(), |path| path),
-                args: binary.arguments.map_or(args, |args| args),
-                env: Default::default(),
-            });
-        }
-
-        // try to run oxlint with workspace oxc
-        if self.workspace_oxc_exists(worktree) {
-            let server_path = Path::new(worktree.root_path().as_str())
-                .join(WORKTREE_SERVER_PATH)
-                .to_string_lossy()
-                .to_string();
-            let mut node_args = vec![server_path];
-            node_args.append(&mut args);
-
-            return Ok(zed::Command {
-                command: zed::node_binary_path()?,
-                args: node_args,
-                env: Default::default(),
-            });
-        }
-
-        // install/update and run oxlint for extension
-        self.check_oxc_updates(language_server_id)?;
-
-        let mut server_path = PathBuf::from("./node_modules");
-        server_path.push(self.binary_specifier()?);
-
-        Ok(zed::Command {
-            command: server_path.to_string_lossy().to_string(),
-            args,
-            env: Default::default(),
-        })
-    }
-
-    fn language_server_workspace_configuration(
-        &mut self,
         language_server_id: &LanguageServerId,
-        worktree: &zed_extension_api::Worktree,
-    ) -> Result<Option<serde_json::Value>> {
-        let settings = LspSettings::for_worktree(language_server_id.as_ref(), worktree)?;
-        Ok(settings
-            .initialization_options
-            .and_then(|data| data.get("options").cloned()))
+        worktree: &Worktree,
+    ) -> Result<Command> {
+        if self.is_oxfmt_language_server(language_server_id) {
+            self.update_oxfmt_language_server_if_needed(language_server_id, worktree)?;
+
+            return self
+                .oxfmt_lsp
+                .read()
+                .unwrap()
+                .language_server_command(language_server_id, worktree);
+        }
+
+        if self.is_oxlint_language_server(language_server_id) {
+            self.update_oxlint_language_server_if_needed(language_server_id, worktree)?;
+
+            return self
+                .oxlint_lsp
+                .read()
+                .unwrap()
+                .language_server_command(language_server_id, worktree);
+        }
+
+        Err(format!(
+            "Unsupported language server id: {:?}",
+            language_server_id
+        ))
     }
+
     fn language_server_initialization_options(
         &mut self,
         language_server_id: &LanguageServerId,
-        worktree: &zed_extension_api::Worktree,
-    ) -> Result<Option<serde_json::Value>> {
-        let settings = LspSettings::for_worktree(language_server_id.as_ref(), worktree)?;
-        Ok(settings.initialization_options)
+        worktree: &Worktree,
+    ) -> Result<Option<Value>> {
+        if self.is_oxfmt_language_server(language_server_id) {
+            return self
+                .oxfmt_lsp
+                .read()
+                .unwrap()
+                .language_server_initialization_options(language_server_id, worktree);
+        }
+
+        if self.is_oxlint_language_server(language_server_id) {
+            return self
+                .oxlint_lsp
+                .read()
+                .unwrap()
+                .language_server_initialization_options(language_server_id, worktree);
+        }
+
+        Err(format!(
+            "Unsupported language server id: {:?}",
+            language_server_id
+        ))
     }
 }
 
-zed_extension_api::register_extension!(OxcExtension);
+register_extension!(OxcExtension);

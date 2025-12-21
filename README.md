@@ -18,26 +18,43 @@ Languages currently supported:
 
 ## Installation
 
-Requires Zed >= **v0.131.0**.
+Requires Zed >= **v0.205.0**.
 
 This extension is available in the extensions view inside the Zed editor. Open `zed: extensions` and search for _Oxc_.
 
 ## Configuration
 
-To configure the oxc extension in the Zed editor, edit your settings.json file and add the following configuration:
+Configuration is done within your settings.json file. Below are some example configurations.
+See https://github.com/oxc-project/oxc/tree/main/crates/oxc_language_server for the options that are supported by the
+language server.
+
+### Oxfmt
 
 ```json
 {
+  "languages": {
+    "JavaScript": {
+      "format_on_save": "on",
+      "formatter": [
+        {
+          "language_server": {
+            "name": "oxfmt"
+          }
+        }
+      ]
+    }
+  },
   "lsp": {
-    "oxc": {
+    "oxfmt": {
       "initialization_options": {
-        "options": {
-          "run": "onType",
+        "settings": {
           "configPath": null,
-          "tsConfigPath": null,
-          "unusedDisableDirectives": "allow",
+          "flags": {},
+          "fmt.configPath": null,
+          "fmt.experimental": true,
+          "run": "onSave",
           "typeAware": false,
-          "flags": {}
+          "unusedDisableDirectives": false
         }
       }
     }
@@ -45,15 +62,80 @@ To configure the oxc extension in the Zed editor, edit your settings.json file a
 }
 ```
 
-Below are the available values and descriptions for each option:
+### Oxlint
 
-| Option Key                | Value(s)                       | Default    | Description                                                                                                                                            |
-| ------------------------- | ------------------------------ | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `run`                     | `"onSave" \| "onType"`         | `"onType"` | Should the server lint the files when the user is typing or saving                                                                                     |
-| `configPath`              | `<string>` \| `null`           | `null`     | Path to a oxlint configuration file, passing a string will disable nested configuration                                                                |
-| `tsConfigPath`            | `<string>` \| `null`           | `null`     | Path to a TypeScript configuration file. If your `tsconfig.json` is not at the root, alias paths will not be resolve correctly for the `import` plugin |
-| `unusedDisableDirectives` | `"allow" \| "warn"` \| "deny"` | `"allow"`  | Define how directive comments like `// oxlint-disable-line` should be reported, when no errors would have been reported on that line anyway            |
-| `typeAware`               | `true` \| `false`              | `false`    | Enables type-aware linting                                                                                                                             |
-| `flags`                   | `Map<string, string>`          | `<empty>`  | Special oxc language server flags, currently only one flag key is supported: `disable_nested_config`                                                   |
+```json
+{
+  "languages": {
+    "JavaScript": {
+      "format_on_save": "on",
+      "formatter": [
+        {
+          "code_action": "source.fixAll.oxc"
+        }
+      ]
+    }
+  },
+  "lsp": {
+    "oxlint": {
+      "initialization_options": {
+        "settings": {
+          "disableNestedConfig": false,
+          "fixKind": "safe_fix",
+          "run": "onType",
+          "typeAware": true,
+          "unusedDisableDirectives": "deny"
+        }
+      }
+    }
+  }
+}
+```
 
-For more information, see <https://github.com/oxc-project/oxc/tree/main/crates/oxc_language_server>
+### Oxfmt and Oxlint
+
+```json
+{
+  "languages": {
+    "JavaScript": {
+      "format_on_save": "on",
+      "formatter": [
+        {
+          "language_server": {
+            "name": "oxfmt"
+          }
+        },
+        {
+          "code_action": "source.fixAll.oxc"
+        }
+      ]
+    }
+  },
+  "lsp": {
+    "oxlint": {
+      "initialization_options": {
+        "settings": {
+          "disableNestedConfig": false,
+          "fixKind": "safe_fix",
+          "run": "onType",
+          "typeAware": true,
+          "unusedDisableDirectives": "deny"
+        }
+      }
+    },
+    "oxfmt": {
+      "initialization_options": {
+        "settings": {
+          "configPath": null,
+          "flags": {},
+          "fmt.configPath": null,
+          "fmt.experimental": true,
+          "run": "onSave",
+          "typeAware": false,
+          "unusedDisableDirectives": false
+        }
+      }
+    }
+  }
+}
+```

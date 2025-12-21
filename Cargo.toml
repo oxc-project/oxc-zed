@@ -10,4 +10,6 @@ crate-type = ["cdylib"]
 path = "src/oxc.rs"
 
 [dependencies]
+simple_logger = "5.1.0"
+log = "0.4.29"
 zed_extension_api = "0.7.0"

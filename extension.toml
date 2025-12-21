@@ -6,8 +6,8 @@ repository = "https://github.com/oxc-project/zed-oxc"
 schema_version = 1
 version = "0.3.3"
 
-[language_servers.oxc]
-code_actions_kind = ["quickfix","source.fixAll.oxc"]
+[language_servers.oxlint]
+code_actions_kind = ["quickfix", "source.fixAll.oxc"]
 language = "JavaScript"
 languages = [
     "JavaScript",
@@ -18,9 +18,9 @@ languages = [
     "Astro",
     "Svelte",
 ]
-name = "Oxc Language Server"
+name = "Oxlint Language Server"
 
-[language_servers.oxc.language_ids]
+[language_servers.oxlint.language_ids]
 "Astro" = "astro"
 "JSX" = "javascriptreact"
 "JavaScript" = "javascript"
@@ -28,3 +28,19 @@ name = "Oxc Language Server"
 "TSX" = "typescriptreact"
 "TypeScript" = "typescript"
 "Vue.js" = "vuejs"
+
+[language_servers.oxfmt]
+language = "JavaScript"
+languages = [
+    "JavaScript",
+    "JSX",
+    "TypeScript",
+    "TSX"
+]
+name = "Oxfmt Language Server"
+
+[language_servers.oxfmt.language_ids]
+"JSX" = "javascriptreact"
+"JavaScript" = "javascript"
+"TSX" = "typescriptreact"
+"TypeScript" = "typescript"
