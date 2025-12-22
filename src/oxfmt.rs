@@ -24,7 +24,7 @@ impl ZedLspSupport for ZedOxfmtLsp {
         worktree: &Worktree,
     ) -> Result<Command> {
         let settings = LspSettings::for_worktree(language_server_id.as_ref(), worktree)?;
-        debug!("Oxfmt Settings: {:?}", settings);
+        debug!("Oxfmt Settings: {settings:?}");
 
         if let Some(binary) = settings.binary {
             return Ok(Command {
@@ -60,7 +60,7 @@ impl ZedLspSupport for ZedOxfmtLsp {
         worktree: &Worktree,
     ) -> Result<Option<Value>> {
         let settings = LspSettings::for_worktree(language_server_id.as_ref(), worktree)?;
-        debug!("Oxfmt Settings: {:?}", settings);
+        debug!("Oxfmt Settings: {settings:?}");
 
         Ok(settings.initialization_options)
     }

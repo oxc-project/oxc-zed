@@ -92,8 +92,7 @@ impl Extension for OxcExtension {
         }
 
         Err(format!(
-            "Unsupported language server id: {:?}",
-            language_server_id
+            "Unsupported language server id: {language_server_id:?}"
         ))
     }
 
@@ -119,8 +118,7 @@ impl Extension for OxcExtension {
         }
 
         Err(format!(
-            "Unsupported language server id: {:?}",
-            language_server_id
+            "Unsupported language server id: {language_server_id:?}"
         ))
     }
 }

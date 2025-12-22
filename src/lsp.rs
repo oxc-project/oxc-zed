@@ -3,13 +3,13 @@ use std::env;
 use std::path::{Path, PathBuf};
 use zed_extension_api::serde_json::Value;
 use zed_extension_api::{
-    npm_install_package, npm_package_installed_version, npm_package_latest_version, set_language_server_installation_status, Command, LanguageServerId,
-    LanguageServerInstallationStatus, Os, Result,
+    npm_install_package, npm_package_installed_version, npm_package_latest_version, set_language_server_installation_status, Command,
+    LanguageServerId, LanguageServerInstallationStatus, Result,
     Worktree,
 };
 
-pub const OXLINT_SERVER_ID: &'static str = "oxlint";
-pub const OXFMT_SERVER_ID: &'static str = "oxfmt";
+pub const OXLINT_SERVER_ID: &str = "oxlint";
+pub const OXFMT_SERVER_ID: &str = "oxfmt";
 
 pub trait ZedLspSupport: Send + Sync {
     fn exe_exists(&self, worktree: &Worktree) -> Result<bool> {
@@ -44,7 +44,7 @@ pub trait ZedLspSupport: Send + Sync {
         }
 
         debug!("Using exe installation from extension");
-        Ok(self.get_extension_exe_path()?)
+        self.get_extension_exe_path()
     }
 
     fn get_package_name(&self) -> String;
@@ -74,8 +74,7 @@ pub trait ZedLspSupport: Send + Sync {
         let current_version = npm_package_installed_version(package_name.as_str())?;
         let latest_version = npm_package_latest_version(package_name.as_str())?;
         debug!(
-            "Package {:?} versions - Current: {:?}, Latest: {:?}",
-            package_name, current_version, latest_version
+            "Package {package_name:?} versions - Current: {current_version:?}, Latest: {latest_version:?}",
         );
         if current_version.is_some_and(|version| version == latest_version) {
             // Do nothing.

@@ -24,7 +24,7 @@ impl ZedLspSupport for ZedOxlintLsp {
         worktree: &Worktree,
     ) -> Result<Command> {
         let settings = LspSettings::for_worktree(language_server_id.as_ref(), worktree)?;
-        debug!("Oxlint Settings: {:?}", settings);
+        debug!("Oxlint Settings: {settings:?}");
 
         if let Some(binary) = settings.binary {
             return Ok(Command {
@@ -60,7 +60,7 @@ impl ZedLspSupport for ZedOxlintLsp {
         worktree: &Worktree,
     ) -> Result<Option<Value>> {
         let settings = LspSettings::for_worktree(language_server_id.as_ref(), worktree)?;
-        debug!("Oxlint Settings: {:?}", settings);
+        debug!("Oxlint Settings: {settings:?}");
 
         Ok(settings.initialization_options)
     }
