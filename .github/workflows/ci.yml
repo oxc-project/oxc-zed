@@ -1,0 +1,28 @@
+name: CI
+
+permissions: { }
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref_name }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.ref_name != 'main' }}
+
+jobs:
+  build:
+    if: github.repository == 'oxc-project/oxc-zed'
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: taiki-e/checkout-action@b13d20b7cda4e2f325ef19895128f7ff735c0b3d # v1.3.1
+      - uses: oxc-project/setup-rust@ecabb7322a2ba5aeedb3612d2a40b86a85cee235 # v1.0.11
+        with:
+          save-cache: ${{ github.ref_name == 'main' }}
+          cache-key: warm
+      - run: cargo check --workspace --all-features --all-targets --locked
+      - run: cargo test --workspace --all-features
+      - run: cargo clippy --workspace --all-targets --all-features
