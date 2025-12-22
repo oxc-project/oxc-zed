@@ -2,7 +2,7 @@ mod lsp;
 mod oxfmt;
 mod oxlint;
 
-use crate::lsp::{ZedLspSupport, OXFMT_SERVER_ID, OXLINT_SERVER_ID};
+use crate::lsp::{OXFMT_SERVER_ID, OXLINT_SERVER_ID, ZedLspSupport};
 use crate::oxfmt::ZedOxfmtLsp;
 use crate::oxlint::ZedOxlintLsp;
 use log::Level;
@@ -10,8 +10,8 @@ use serde_json::Value;
 use simple_logger::init_with_level;
 use std::sync::{Arc, RwLock};
 use zed_extension_api::{
-    register_extension, serde_json::{self}, Command, Extension, LanguageServerId, Result,
-    Worktree,
+    Command, Extension, LanguageServerId, Result, Worktree, register_extension,
+    serde_json::{self},
 };
 
 struct OxcExtension {

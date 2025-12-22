@@ -3,7 +3,7 @@ use log::debug;
 use std::collections::HashMap;
 use zed_extension_api::serde_json::Value;
 use zed_extension_api::settings::LspSettings;
-use zed_extension_api::{node_binary_path, Command, EnvVars, LanguageServerId, Result, Worktree};
+use zed_extension_api::{Command, EnvVars, LanguageServerId, Result, Worktree, node_binary_path};
 
 pub struct ZedOxlintLsp {}
 

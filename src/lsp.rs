@@ -3,9 +3,9 @@ use std::env;
 use std::path::{Path, PathBuf};
 use zed_extension_api::serde_json::Value;
 use zed_extension_api::{
-    npm_install_package, npm_package_installed_version, npm_package_latest_version, set_language_server_installation_status, Command,
-    LanguageServerId, LanguageServerInstallationStatus, Result,
-    Worktree,
+    Command, LanguageServerId, LanguageServerInstallationStatus, Result, Worktree,
+    npm_install_package, npm_package_installed_version, npm_package_latest_version,
+    set_language_server_installation_status,
 };
 
 pub const OXLINT_SERVER_ID: &str = "oxlint";
