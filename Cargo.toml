@@ -1,5 +1,5 @@
 [package]
-name = "zed-oxc"
+name = "oxc-zed"
 version = "0.3.3"
 edition = "2024"
 license = "MIT"
