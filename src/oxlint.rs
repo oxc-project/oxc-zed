@@ -1,6 +1,5 @@
 use crate::lsp::ZedLspSupport;
 use log::debug;
-use std::collections::HashMap;
 use zed_extension_api::serde_json::Value;
 use zed_extension_api::settings::LspSettings;
 use zed_extension_api::{Command, EnvVars, LanguageServerId, Result, Worktree, node_binary_path};
@@ -36,7 +35,7 @@ impl ZedLspSupport for ZedOxlintLsp {
                     .expect("When supplying binary settings, the args must be supplied"),
                 env: binary
                     .env
-                    .unwrap_or(HashMap::default())
+                    .unwrap_or_default()
                     .into_iter()
                     .collect(),
             });
