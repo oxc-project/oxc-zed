@@ -11,19 +11,6 @@ impl ZedOxlintLsp {
     pub fn new() -> Self {
         ZedOxlintLsp {}
     }
-
-    pub fn language_server_workspace_configuration(
-        &self,
-        language_server_id: &LanguageServerId,
-        worktree: &Worktree,
-    ) -> Result<Option<Value>> {
-        Ok(
-            LspSettings::for_worktree(language_server_id.as_ref(), worktree)?
-                .initialization_options
-                .as_ref()
-                .and_then(|v| v.get("settings").cloned()),
-        )
-    }
 }
 
 impl ZedLspSupport for ZedOxlintLsp {
@@ -73,6 +60,19 @@ impl ZedLspSupport for ZedOxlintLsp {
         debug!("Oxlint Settings: {settings:?}");
 
         Ok(settings.initialization_options)
+    }
+
+    fn language_server_workspace_configuration(
+        &self,
+        language_server_id: &LanguageServerId,
+        worktree: &Worktree,
+    ) -> Result<Option<Value>> {
+        Ok(
+            LspSettings::for_worktree(language_server_id.as_ref(), worktree)?
+                .initialization_options
+                .as_ref()
+                .and_then(|v| v.get("settings").cloned()),
+        )
     }
 }
 
