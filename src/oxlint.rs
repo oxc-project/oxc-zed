@@ -77,28 +77,25 @@ impl ZedLspSupport for ZedOxlintLsp {
     }
 }
 
-fn normalize_tsgolint_env(
-    env_map: Option<HashMap<String, String>>,
+#[expect(clippy::disallowed_types, reason = "HashMap comes from Zed API")]
+fn normalize_env(
+    env_map: Option<std::collections::HashMap<String, String>>,
     worktree: &Worktree,
 ) -> Result<EnvVars> {
-    let mut env: EnvVars = env_map.unwrap_or_default().into_iter().collect();
-
-    if let Some((_, path)) = env
-        .iter_mut()
-        .find(|(key, _)| key == "OXLINT_TSGOLINT_PATH")
-    {
-        let root_path = worktree.root_path();
-        let worktree_root = Path::new(root_path.as_str());
-        let path_buf = PathBuf::from(path.as_str());
+    let mut env = env_map.unwrap_or_default();
+    if let Some(tsgolint_path) = env.get_mut("OXLINT_TSGOLINT_PATH") {
+        let path_buf = PathBuf::from(tsgolint_path.as_str());
 
         let resolved = if path_buf.is_absolute() {
             path_buf
         } else {
+            let root_path = worktree.root_path();
+            let worktree_root = Path::new(root_path.as_str());
             worktree_root.join(&path_buf)
         };
 
-        *path = resolved.to_string_lossy().to_string();
+        *tsgolint_path = resolved.to_string_lossy().to_string();
     }
 
-    Ok(env)
+    Ok(env.into_iter().collect())
 }
