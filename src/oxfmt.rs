@@ -25,28 +25,33 @@ impl ZedLspSupport for ZedOxfmtLsp {
         let settings = LspSettings::for_worktree(language_server_id.as_ref(), worktree)?;
         debug!("Oxfmt Settings: {settings:?}");
 
+        let args: Vec<String>;
+        let command: String;
+        let env: EnvVars;
         if let Some(binary) = settings.binary {
-            return Ok(Command {
-                command: binary
-                    .path
-                    .expect("When supplying binary settings, the path must be supplied"),
-                args: binary
-                    .arguments
-                    .expect("When supplying binary settings, the args must be supplied"),
-                env: binary.env.unwrap_or_default().into_iter().collect(),
-            });
-        }
+            if (binary.path.is_some() && binary.arguments.is_none())
+                || (binary.path.is_none() && binary.arguments.is_some())
+            {
+                return Err(
+                    "When supplying binary.arguments, binary.path must be supplied (or vice-versa).".to_string(),
+                );
+            }
 
-        Ok(Command {
-            command: node_binary_path()?,
-            args: vec![
+            args = binary.arguments.unwrap();
+            command = binary.path.unwrap();
+            env = binary.env.unwrap_or_default().into_iter().collect();
+        } else {
+            args = vec![
                 self.get_resolved_exe_path(worktree)?
                     .to_string_lossy()
                     .to_string(),
                 "--lsp".to_string(),
-            ],
-            env: EnvVars::default(),
-        })
+            ];
+            command = node_binary_path()?;
+            env = EnvVars::default();
+        }
+
+        Ok(Command { command, args, env })
     }
 
     fn language_server_initialization_options(
