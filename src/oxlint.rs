@@ -1,6 +1,5 @@
 use crate::lsp::ZedLspSupport;
 use log::debug;
-use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use zed_extension_api::serde_json::Value;
 use zed_extension_api::settings::LspSettings;
@@ -41,7 +40,7 @@ impl ZedLspSupport for ZedOxlintLsp {
         debug!("Oxlint Settings: {settings:?}");
 
         if let Some(binary) = settings.binary {
-            let env = normalize_tsgolint_env(binary.env, worktree)?;
+            let env = normalize_env(binary.env, worktree)?;
             return Ok(Command {
                 command: binary
                     .path
