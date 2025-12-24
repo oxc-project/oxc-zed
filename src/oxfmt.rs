@@ -25,9 +25,14 @@ impl ZedLspSupport for ZedOxfmtLsp {
         let settings = LspSettings::for_worktree(language_server_id.as_ref(), worktree)?;
         debug!("Oxfmt Settings: {settings:?}");
 
-        let args: Vec<String>;
-        let command: String;
-        let env: EnvVars;
+        let mut args = vec![
+            self.get_resolved_exe_path(worktree)?
+                .to_string_lossy()
+                .to_string(),
+            "--lsp".to_string(),
+        ];
+        let mut command = node_binary_path()?;
+        let mut env = EnvVars::default();
         if let Some(binary) = settings.binary {
             if (binary.path.is_some() && binary.arguments.is_none())
                 || (binary.path.is_none() && binary.arguments.is_some())
@@ -37,18 +42,13 @@ impl ZedLspSupport for ZedOxfmtLsp {
                 );
             }
 
-            args = binary.arguments.unwrap();
-            command = binary.path.unwrap();
+            if binary.arguments.is_some() {
+                args = binary.arguments.unwrap();
+            }
+            if binary.path.is_some() {
+                command = binary.path.unwrap();
+            }
             env = binary.env.unwrap_or_default().into_iter().collect();
-        } else {
-            args = vec![
-                self.get_resolved_exe_path(worktree)?
-                    .to_string_lossy()
-                    .to_string(),
-                "--lsp".to_string(),
-            ];
-            command = node_binary_path()?;
-            env = EnvVars::default();
         }
 
         Ok(Command { command, args, env })
