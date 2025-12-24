@@ -61,6 +61,12 @@ pub trait ZedLspSupport: Send + Sync {
         worktree: &Worktree,
     ) -> Result<Option<Value>>;
 
+    fn language_server_workspace_configuration(
+        &self,
+        language_server_id: &LanguageServerId,
+        worktree: &Worktree,
+    ) -> Result<Option<Value>>;
+
     fn update_extension_language_server_if_outdated(
         &self,
         language_server_id: &LanguageServerId,

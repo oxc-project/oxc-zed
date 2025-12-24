@@ -59,4 +59,17 @@ impl ZedLspSupport for ZedOxfmtLsp {
 
         Ok(settings.initialization_options)
     }
+
+    fn language_server_workspace_configuration(
+        &self,
+        language_server_id: &LanguageServerId,
+        worktree: &Worktree,
+    ) -> Result<Option<Value>> {
+        Ok(
+            LspSettings::for_worktree(language_server_id.as_ref(), worktree)?
+                .initialization_options
+                .as_ref()
+                .and_then(|v| v.get("settings").cloned()),
+        )
+    }
 }

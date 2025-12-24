@@ -1,5 +1,6 @@
 use crate::lsp::ZedLspSupport;
 use log::debug;
+use std::path::{Path, PathBuf};
 use zed_extension_api::serde_json::Value;
 use zed_extension_api::settings::LspSettings;
 use zed_extension_api::{Command, EnvVars, LanguageServerId, Result, Worktree, node_binary_path};
@@ -26,6 +27,7 @@ impl ZedLspSupport for ZedOxlintLsp {
         debug!("Oxlint Settings: {settings:?}");
 
         if let Some(binary) = settings.binary {
+            let env = normalize_env(binary.env, worktree)?;
             return Ok(Command {
                 command: binary
                     .path
@@ -33,7 +35,7 @@ impl ZedLspSupport for ZedOxlintLsp {
                 args: binary
                     .arguments
                     .expect("When supplying binary settings, the args must be supplied"),
-                env: binary.env.unwrap_or_default().into_iter().collect(),
+                env,
             });
         }
 
@@ -59,4 +61,40 @@ impl ZedLspSupport for ZedOxlintLsp {
 
         Ok(settings.initialization_options)
     }
+
+    fn language_server_workspace_configuration(
+        &self,
+        language_server_id: &LanguageServerId,
+        worktree: &Worktree,
+    ) -> Result<Option<Value>> {
+        Ok(
+            LspSettings::for_worktree(language_server_id.as_ref(), worktree)?
+                .initialization_options
+                .as_ref()
+                .and_then(|v| v.get("settings").cloned()),
+        )
+    }
+}
+
+#[expect(clippy::disallowed_types, reason = "HashMap comes from Zed API")]
+fn normalize_env(
+    env_map: Option<std::collections::HashMap<String, String>>,
+    worktree: &Worktree,
+) -> Result<EnvVars> {
+    let mut env = env_map.unwrap_or_default();
+    if let Some(tsgolint_path) = env.get_mut("OXLINT_TSGOLINT_PATH") {
+        let path_buf = PathBuf::from(tsgolint_path.as_str());
+
+        let resolved = if path_buf.is_absolute() {
+            path_buf
+        } else {
+            let root_path = worktree.root_path();
+            let worktree_root = Path::new(root_path.as_str());
+            worktree_root.join(&path_buf)
+        };
+
+        *tsgolint_path = resolved.to_string_lossy().to_string();
+    }
+
+    Ok(env.into_iter().collect())
 }
