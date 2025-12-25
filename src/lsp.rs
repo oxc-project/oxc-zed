@@ -29,18 +29,12 @@ pub trait ZedLspSupport: Send + Sync {
         }))
     }
 
-    fn get_extension_exe_path(&self) -> Result<PathBuf> {
-        let extension_work_dir = env::current_dir().map_err(|err| err.to_string())?;
-
-        Ok(Path::new(&extension_work_dir)
-            .join("node_modules")
-            .join(".bin")
-            .join(self.get_package_name()))
-    }
-
-    fn get_workspace_exe_path(&self, worktree: &Worktree) -> Result<PathBuf> {
+    fn get_exe_path_from(&self, from: &Path) -> Result<PathBuf> {
         let package_name = self.get_package_name();
-        Ok(Path::new(worktree.root_path().as_str())
+
+        // Doesn't use `node_modules/.bin` due to PNPM storing bash scripts there
+        // instead of Node.js scripts.
+        Ok(from
             .join("node_modules")
             .join(&package_name)
             .join("bin")
@@ -53,11 +47,11 @@ pub trait ZedLspSupport: Send + Sync {
                 "Found exe installation in worktree {}",
                 worktree.root_path()
             );
-            return self.get_workspace_exe_path(worktree);
+            return self.get_exe_path_from(Path::new(worktree.root_path().as_str()));
         }
 
         debug!("Using exe installation from extension");
-        self.get_extension_exe_path()
+        self.get_exe_path_from(env::current_dir().map_err(|err| err.to_string())?.as_path())
     }
 
     fn get_package_name(&self) -> String;
