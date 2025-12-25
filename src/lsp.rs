@@ -1,7 +1,7 @@
 use log::debug;
 use std::env;
 use std::path::{Path, PathBuf};
-use zed_extension_api::serde_json::Value;
+use zed_extension_api::serde_json::{Value, from_str};
 use zed_extension_api::{
     Command, LanguageServerId, LanguageServerInstallationStatus, Result, Worktree,
     npm_install_package, npm_package_installed_version, npm_package_latest_version,
@@ -13,9 +13,20 @@ pub const OXFMT_SERVER_ID: &str = "oxfmt";
 
 pub trait ZedLspSupport: Send + Sync {
     fn exe_exists(&self, worktree: &Worktree) -> Result<bool> {
-        let exe_path = self.get_workspace_exe_path(worktree)?;
+        // Reading files from node_modules doesn't seem to be possible now,
+        // https://github.com/zed-industries/zed/issues/10760.
+        // Instead we try to read the `package.json`, see if the package is installed
+        let package_json = worktree
+            .read_text_file("package.json")
+            .unwrap_or(String::from(r#"{}"#));
 
-        Ok(exe_path.is_file())
+        let package_json: Option<Value> = from_str(package_json.as_str()).ok();
+
+        let package_name = self.get_package_name();
+        Ok(package_json.is_some_and(|f| {
+            !f["dependencies"][&package_name].is_null()
+                || !f["devDependencies"][&package_name].is_null()
+        }))
     }
 
     fn get_extension_exe_path(&self) -> Result<PathBuf> {
@@ -28,10 +39,12 @@ pub trait ZedLspSupport: Send + Sync {
     }
 
     fn get_workspace_exe_path(&self, worktree: &Worktree) -> Result<PathBuf> {
+        let package_name = self.get_package_name();
         Ok(Path::new(worktree.root_path().as_str())
             .join("node_modules")
-            .join(".bin")
-            .join(self.get_package_name()))
+            .join(&package_name)
+            .join("bin")
+            .join(&package_name))
     }
 
     fn get_resolved_exe_path(&self, worktree: &Worktree) -> Result<PathBuf> {
