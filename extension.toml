@@ -35,11 +35,15 @@ languages = [
     "JavaScript",
     "JSX",
     "TypeScript",
-    "TSX"
+    "TSX",
+    "JSON",
+    "JSONC",
 ]
 name = "Oxfmt Language Server"
 
 [language_servers.oxfmt.language_ids]
+"JSON" = "json"
+"JSONC" = "jsonc"
 "JSX" = "javascriptreact"
 "JavaScript" = "javascript"
 "TSX" = "typescriptreact"
