@@ -23,7 +23,7 @@ impl ZedLspSupport for ZedOxfmtLsp {
         worktree: &Worktree,
     ) -> Result<Command> {
         let settings = LspSettings::for_worktree(language_server_id.as_ref(), worktree)?;
-        debug!("Oxfmt Settings: {settings:?}");
+        debug!("Oxfmt language_server_command LspSettings: {settings:?}");
 
         let mut args = vec![
             self.get_resolved_exe_path(worktree)?
@@ -60,7 +60,7 @@ impl ZedLspSupport for ZedOxfmtLsp {
         worktree: &Worktree,
     ) -> Result<Option<Value>> {
         let settings = LspSettings::for_worktree(language_server_id.as_ref(), worktree)?;
-        debug!("Oxfmt Settings: {settings:?}");
+        debug!("Oxfmt language_server_initialization_options LspSettings: {settings:?}");
 
         Ok(settings.initialization_options)
     }
@@ -70,11 +70,12 @@ impl ZedLspSupport for ZedOxfmtLsp {
         language_server_id: &LanguageServerId,
         worktree: &Worktree,
     ) -> Result<Option<Value>> {
-        Ok(
-            LspSettings::for_worktree(language_server_id.as_ref(), worktree)?
-                .initialization_options
-                .as_ref()
-                .and_then(|v| v.get("settings").cloned()),
-        )
+        let settings = LspSettings::for_worktree(language_server_id.as_ref(), worktree)?;
+        debug!("Oxfmt language_server_workspace_configuration LspSettings: {settings:?}");
+
+        Ok(settings
+            .initialization_options
+            .as_ref()
+            .and_then(|v| v.get("settings").cloned()))
     }
 }

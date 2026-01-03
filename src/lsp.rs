@@ -43,15 +43,15 @@ pub trait ZedLspSupport: Send + Sync {
 
     fn get_resolved_exe_path(&self, worktree: &Worktree) -> Result<PathBuf> {
         if self.exe_exists(worktree)? {
-            debug!(
-                "Found exe installation in worktree {}",
-                worktree.root_path()
-            );
-            return self.get_exe_path_from(Path::new(worktree.root_path().as_str()));
+            let path = self.get_exe_path_from(Path::new(worktree.root_path().as_str()));
+            debug!("Found exe installation in worktree at path {path:?}");
+            return path;
         }
 
-        debug!("Using exe installation from extension");
-        self.get_exe_path_from(env::current_dir().map_err(|err| err.to_string())?.as_path())
+        let path =
+            self.get_exe_path_from(env::current_dir().map_err(|err| err.to_string())?.as_path());
+        debug!("Using exe installation from extension at path {path:?}");
+        path
     }
 
     fn get_package_name(&self) -> String;
