@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.2](https://github.com/oxc-project/oxc-zed/compare/v0.4.1...v0.4.2) - 2026-01-03
+
+### Added
+
+- Additional debug logging ([#63](https://github.com/oxc-project/oxc-zed/pull/63))
+
+### Other
+
+- Add example projects for oxfmt and oxlint ([#62](https://github.com/oxc-project/oxc-zed/pull/62))
+- update repository in extension.toml
+- *(deps)* update crate-ci/typos action to v1.40.1 ([#59](https://github.com/oxc-project/oxc-zed/pull/59))
+- update description in extension.toml
+- change authors to Boshen so it looks legit in the extension store
+
 ## [0.4.1](https://github.com/oxc-project/oxc-zed/compare/v0.4.0...v0.4.1) - 2025-12-25
 
 ### Added
