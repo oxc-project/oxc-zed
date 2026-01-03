@@ -1,0 +1,12 @@
+{
+  "plugins": [],
+  "categories": {},
+  "rules": {
+    "curly": "deny"
+  },
+  "env": {
+    "builtin": true
+  },
+  "globals": {},
+  "ignorePatterns": []
+}
