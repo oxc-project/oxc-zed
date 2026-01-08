@@ -35,12 +35,40 @@ languages = [
     "JavaScript",
     "JSX",
     "TypeScript",
-    "TSX"
+    "TSX",
+    "Vue.js",
+    "JSON",
+    "JSON5",
+    "JSONC",
+    "HTML",
+    "CSS",
+    "SCSS",
+    "Less",
+    "GraphQL",
+    "Handlebars",
+    "Markdown",
+    "MDX",
+    "YAML",
+    "TOML",
 ]
 name = "Oxfmt Language Server"
 
 [language_servers.oxfmt.language_ids]
+"CSS" = "css"
+"GraphQL" = "graphql"
+"HTML" = "html"
+"Handlebars" = "handlebars"
+"JSON" = "json"
+"JSON5" = "json5"
+"JSONC" = "jsonc"
 "JSX" = "javascriptreact"
 "JavaScript" = "javascript"
+"Less" = "less"
+"MDX" = "mdx"
+"Markdown" = "markdown"
+"SCSS" = "scss"
+"TOML" = "toml"
 "TSX" = "typescriptreact"
 "TypeScript" = "typescript"
+"Vue.js" = "vue"
+"YAML" = "yaml"
