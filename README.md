@@ -6,15 +6,7 @@
 
 This extension adds support for [Oxc](https://github.com/oxc-project/oxc) in [Zed](https://zed.dev/).
 
-Languages currently supported:
-
-- **JavaScript**
-- **TypeScript**
-- **JSX**
-- **TSX**
-- **Vue.js**
-- **Astro**
-- **Svelte**
+The supported languages for Oxfmt and Oxlint can be seen within the [extension.toml](extension.toml) file.
 
 ## Installation
 
