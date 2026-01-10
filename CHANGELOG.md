@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.3](https://github.com/oxc-project/oxc-zed/compare/v0.4.2...v0.4.3) - 2026-01-10
+
+### Added
+
+- add languages that oxfmt supports ([#73](https://github.com/oxc-project/oxc-zed/pull/73))
+
+### Other
+
+- Update the readme with supported languages ([#74](https://github.com/oxc-project/oxc-zed/pull/74))
+- *(deps)* update crate-ci/typos action to v1.42.0 ([#72](https://github.com/oxc-project/oxc-zed/pull/72))
+- *(deps)* update dependency oxlint to v1.38.0 ([#71](https://github.com/oxc-project/oxc-zed/pull/71))
+- *(deps)* update dependency oxfmt to v0.23.0 ([#70](https://github.com/oxc-project/oxc-zed/pull/70))
+- Remove configuration examples from the README and link to the examples folder ([#68](https://github.com/oxc-project/oxc-zed/pull/68))
+- *(deps)* update dependency oxlint to v1.37.0 ([#65](https://github.com/oxc-project/oxc-zed/pull/65))
+- *(deps)* update dependency oxfmt to v0.22.0 ([#64](https://github.com/oxc-project/oxc-zed/pull/64))
+- Clean up oxfmt settings configuration ([#66](https://github.com/oxc-project/oxc-zed/pull/66))
+- *(deps)* update crate-ci/typos action to v1.41.0 ([#61](https://github.com/oxc-project/oxc-zed/pull/61))
+
 ## [0.4.2](https://github.com/oxc-project/oxc-zed/compare/v0.4.1...v0.4.2) - 2026-01-03
 
 ### Added
