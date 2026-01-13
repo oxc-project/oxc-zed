@@ -1,0 +1,8 @@
+{
+  "name": "both",
+  "packageManager": "pnpm@10.27.0",
+  "devDependencies": {
+    "oxfmt": "^0.24.0",
+    "oxlint": "^1.39.0"
+  }
+}
