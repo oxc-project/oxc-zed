@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.4](https://github.com/oxc-project/oxc-zed/compare/v0.4.3...v0.4.4) - 2026-01-13
+
+### Other
+
+- add example for both
+- update oxfmt example
+- *(deps)* update taiki-e/checkout-action action to v1.3.2 ([#77](https://github.com/oxc-project/oxc-zed/pull/77))
+- Add steps on how to update the Git submodule in the Zed extensions repo ([#75](https://github.com/oxc-project/oxc-zed/pull/75))
+
 ## [0.4.3](https://github.com/oxc-project/oxc-zed/compare/v0.4.2...v0.4.3) - 2026-01-10
 
 ### Added
