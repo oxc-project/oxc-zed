@@ -10,7 +10,7 @@ The supported languages for Oxfmt and Oxlint can be seen within the [extension.t
 
 ## Installation
 
-Requires Zed >= **v0.205.0**.
+Requires Zed >= **v0.205.0** and oxlint >= **v1.35.0**.
 
 This extension is available in the extensions view inside the Zed editor. Open `zed: extensions` and search for _Oxc_.
 
