@@ -1,5 +1,5 @@
 [toolchain]
-channel = "1.92.0"
+channel = "1.93.0"
 profile = "default"
 targets = [
     "wasm32-wasip2"
