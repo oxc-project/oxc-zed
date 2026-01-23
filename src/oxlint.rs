@@ -43,11 +43,11 @@ impl ZedLspSupport for ZedOxlintLsp {
                 );
             }
 
-            if binary.arguments.is_some() {
-                args = binary.arguments.unwrap();
+            if let Some(arguments) = binary.arguments {
+                args = arguments;
             }
-            if binary.path.is_some() {
-                command = binary.path.unwrap();
+            if let Some(path) = binary.path {
+                command = path;
             }
             env = normalize_env(binary.env, worktree)?;
         }
