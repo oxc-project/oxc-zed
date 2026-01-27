@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.4](https://github.com/oxc-project/oxc-zed/compare/v0.4.3...v0.4.4) - 2026-01-27
+
+### Other
+
+- *(deps)* update crate-ci/typos action to v1.42.3 ([#100](https://github.com/oxc-project/oxc-zed/pull/100))
+- *(deps)* update oxc apps ([#99](https://github.com/oxc-project/oxc-zed/pull/99))
+- *(deps)* update crate-ci/typos action to v1.42.2 ([#98](https://github.com/oxc-project/oxc-zed/pull/98))
+- *(deps)* update github-actions ([#94](https://github.com/oxc-project/oxc-zed/pull/94))
+- *(deps)* update pnpm to v10.28.1 ([#95](https://github.com/oxc-project/oxc-zed/pull/95))
+- *(deps)* update dependency rust to v1.93.0 ([#92](https://github.com/oxc-project/oxc-zed/pull/92))
+- *(deps)* update oxc apps ([#91](https://github.com/oxc-project/oxc-zed/pull/91))
+- *(deps)* update crate-ci/typos action to v1.42.1 ([#90](https://github.com/oxc-project/oxc-zed/pull/90))
+- *(deps)* update dependency oxfmt to v0.25.0 ([#89](https://github.com/oxc-project/oxc-zed/pull/89))
+- *(deps)* update pnpm to v10.28.0 ([#88](https://github.com/oxc-project/oxc-zed/pull/88))
+- update logo ([#86](https://github.com/oxc-project/oxc-zed/pull/86))
+- Document oxlint v1.35.0+ requirement ([#85](https://github.com/oxc-project/oxc-zed/pull/85))
+- update README
+- *(deps)* update oxc apps ([#83](https://github.com/oxc-project/oxc-zed/pull/83))
+- add renovate.json
+- add example for both
+- update oxfmt example
+- *(deps)* update taiki-e/checkout-action action to v1.3.2 ([#77](https://github.com/oxc-project/oxc-zed/pull/77))
+- Add steps on how to update the Git submodule in the Zed extensions repo ([#75](https://github.com/oxc-project/oxc-zed/pull/75))
+
 ## [0.4.3](https://github.com/oxc-project/oxc-zed/compare/v0.4.2...v0.4.3) - 2026-01-10
 
 ### Added
