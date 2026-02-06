@@ -56,6 +56,6 @@ jobs:
           cargo clippy --all-targets --all-features -- -D warnings
           RUSTDOCFLAGS='-D warnings' cargo doc --no-deps --document-private-items
 
-      - uses: crate-ci/typos@3a4d65230db538caabac6e156599c8ba8380ff07 # v1.43.1
+      - uses: crate-ci/typos@ad3053d3adbcce7f2e3c60fd4ddfc239787d1eff # v1.43.2
         with:
           files: .
