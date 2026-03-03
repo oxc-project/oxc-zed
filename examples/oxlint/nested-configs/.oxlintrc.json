@@ -1,5 +1,10 @@
 {
-  "plugins": ["react", "unicorn", "typescript", "oxc"],
+  "plugins": [
+    "react",
+    "unicorn",
+    "typescript",
+    "oxc"
+  ],
   "categories": {},
   "rules": {
     "curly": "deny",
@@ -130,5 +135,9 @@
     "builtin": true
   },
   "globals": {},
-  "ignorePatterns": []
+  "ignorePatterns": [],
+  "options": {
+    "typeAware": true,
+    "typeCheck": true
+  }
 }

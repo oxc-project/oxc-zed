@@ -4,5 +4,9 @@
     "unicorn",
     "typescript",
     "oxc"
-  ]
+  ],
+  "options": {
+    "typeAware": true,
+    "typeCheck": true
+  }
 }
