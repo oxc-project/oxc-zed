@@ -7,6 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.5](https://github.com/oxc-project/oxc-zed/compare/v0.4.4...v0.4.5) - 2026-03-31
+
+### Added
+
+- Support LSP from vite-plus ([#141](https://github.com/oxc-project/oxc-zed/pull/141))
+
+### Other
+
+- *(deps)* update pnpm to v10.33.0 ([#154](https://github.com/oxc-project/oxc-zed/pull/154))
+- *(deps)* update oxc apps ([#153](https://github.com/oxc-project/oxc-zed/pull/153))
+- *(deps)* update dependency rust to v1.94.1 ([#151](https://github.com/oxc-project/oxc-zed/pull/151))
+- *(deps)* update oxc apps ([#148](https://github.com/oxc-project/oxc-zed/pull/148))
+- *(deps)* update oxc apps ([#143](https://github.com/oxc-project/oxc-zed/pull/143))
+- *(deps)* update oxc-project/setup-rust action to v1.0.16 ([#142](https://github.com/oxc-project/oxc-zed/pull/142))
+- *(deps)* update oxc apps ([#140](https://github.com/oxc-project/oxc-zed/pull/140))
+- *(deps)* update oxc apps ([#139](https://github.com/oxc-project/oxc-zed/pull/139))
+- *(deps)* update oxc apps ([#137](https://github.com/oxc-project/oxc-zed/pull/137))
+- *(deps)* update oxc apps ([#136](https://github.com/oxc-project/oxc-zed/pull/136))
+- *(deps)* update github-actions ([#135](https://github.com/oxc-project/oxc-zed/pull/135))
+- *(deps)* update dependency rust to v1.94.0 ([#134](https://github.com/oxc-project/oxc-zed/pull/134))
+- Remove `typeAware` option from zed settings ([#132](https://github.com/oxc-project/oxc-zed/pull/132))
+- migrate oxlint CLI type flags to config options ([#131](https://github.com/oxc-project/oxc-zed/pull/131))
+- *(deps)* update oxc apps ([#130](https://github.com/oxc-project/oxc-zed/pull/130))
+- *(deps)* update oxc-project/setup-rust action to v1.0.13 ([#129](https://github.com/oxc-project/oxc-zed/pull/129))
+- *(deps)* update pnpm to v10.30.2 ([#127](https://github.com/oxc-project/oxc-zed/pull/127))
+- *(deps)* update crate-ci/typos action to v1.44.0 ([#126](https://github.com/oxc-project/oxc-zed/pull/126))
+- *(deps)* update oxc apps ([#124](https://github.com/oxc-project/oxc-zed/pull/124))
+- *(deps)* update rust crate simple_logger to v5.2.0 ([#123](https://github.com/oxc-project/oxc-zed/pull/123))
+- *(deps)* update pnpm to v10.30.0 ([#122](https://github.com/oxc-project/oxc-zed/pull/122))
+- *(deps)* update oxc apps ([#121](https://github.com/oxc-project/oxc-zed/pull/121))
+- *(deps)* update dependency oxlint to v1.48.0 ([#120](https://github.com/oxc-project/oxc-zed/pull/120))
+- *(deps)* update crate-ci/typos action to v1.43.5 ([#119](https://github.com/oxc-project/oxc-zed/pull/119))
+- *(deps)* update dependency oxfmt to v0.33.0 ([#118](https://github.com/oxc-project/oxc-zed/pull/118))
+- *(deps)* update pnpm to v10.29.3 ([#117](https://github.com/oxc-project/oxc-zed/pull/117))
+- *(deps)* update dependency rust to v1.93.1 ([#116](https://github.com/oxc-project/oxc-zed/pull/116))
+- *(deps)* update oxc apps ([#115](https://github.com/oxc-project/oxc-zed/pull/115))
+- fix oxfmt configPath arg in both example ([#114](https://github.com/oxc-project/oxc-zed/pull/114))
+- *(deps)* update dependency oxlint to v1.46.0 ([#112](https://github.com/oxc-project/oxc-zed/pull/112))
+- *(deps)* update oxc apps ([#111](https://github.com/oxc-project/oxc-zed/pull/111))
+- *(deps)* update crate-ci/typos action to v1.43.4 ([#109](https://github.com/oxc-project/oxc-zed/pull/109))
+
 ## [0.4.4](https://github.com/oxc-project/oxc-zed/compare/v0.4.3...v0.4.4) - 2026-02-06
 
 ### Other
