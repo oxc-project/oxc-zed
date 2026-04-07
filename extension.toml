@@ -43,7 +43,7 @@ languages = [
     "HTML",
     "CSS",
     "SCSS",
-    "Less",
+    "LESS",
     "GraphQL",
     "Handlebars",
     "Markdown",
@@ -63,7 +63,7 @@ name = "Oxfmt Language Server"
 "JSONC" = "jsonc"
 "JSX" = "javascriptreact"
 "JavaScript" = "javascript"
-"Less" = "less"
+"LESS" = "less"
 "MDX" = "mdx"
 "Markdown" = "markdown"
 "SCSS" = "scss"
