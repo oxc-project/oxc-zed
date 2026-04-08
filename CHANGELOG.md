@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.6](https://github.com/oxc-project/oxc-zed/compare/v0.4.5...v0.4.6) - 2026-04-08
+
+### Fixed
+
+- Correct spelling of LESS in extension.toml ([#159](https://github.com/oxc-project/oxc-zed/pull/159))
+
+### Other
+
+- *(deps)* update oxc apps ([#158](https://github.com/oxc-project/oxc-zed/pull/158))
+- *(deps)* update taiki-e/checkout-action action to v1.4.2 ([#157](https://github.com/oxc-project/oxc-zed/pull/157))
+- *(deps)* update crate-ci/typos action to v1.45.0 ([#155](https://github.com/oxc-project/oxc-zed/pull/155))
+
 ## [0.4.5](https://github.com/oxc-project/oxc-zed/compare/v0.4.4...v0.4.5) - 2026-03-31
 
 ### Added
