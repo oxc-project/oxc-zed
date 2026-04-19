@@ -21,15 +21,21 @@ jobs:
       contents: write
       id-token: write
     steps:
+      - uses: actions/create-github-app-token@1b10c78c7865c340bc4f6099eb2f838309f1e8c3 # v3
+        id: app-token
+        with:
+          client-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
       - uses: oxc-project/release-plz@e2b12f55ad64a22af8e93634b94439c42913afca # v1.0.6
         id: release-plz
         with:
-          PAT: ${{ secrets.OXC_BOT_PAT }}
+          PAT: ${{ steps.app-token.outputs.token }}
 
       - name: Bump extension.toml
         if: ${{ steps.release-plz.outputs.prs_created }}
         env:
-          GH_TOKEN: ${{ secrets.OXC_BOT_PAT }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
           PR_NUMBER: ${{ fromJSON(steps.release-plz.outputs.pr).number }}
           VERSION: ${{ fromJSON(steps.release-plz.outputs.pr).releases[0].version }}
         run: |
