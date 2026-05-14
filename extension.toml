@@ -43,6 +43,7 @@ languages = [
     "HTML",
     "CSS",
     "SCSS",
+    "Svelte",
     "LESS",
     "GraphQL",
     "Handlebars",
@@ -67,6 +68,7 @@ name = "Oxfmt Language Server"
 "MDX" = "mdx"
 "Markdown" = "markdown"
 "SCSS" = "scss"
+"Svelte" = "svelte"
 "TOML" = "toml"
 "TSX" = "typescriptreact"
 "TypeScript" = "typescript"
