@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.7](https://github.com/oxc-project/oxc-zed/compare/v0.4.6...v0.4.7) - 2026-05-17
+
+### Added
+
+- mark svelte as supported for oxfmt ([#188](https://github.com/oxc-project/oxc-zed/pull/188))
+
+### Other
+
+- *(deps)* update actions/create-github-app-token action to v3.2.0 ([#191](https://github.com/oxc-project/oxc-zed/pull/191))
+- switch security workflow to ubuntu-latest ([#190](https://github.com/oxc-project/oxc-zed/pull/190))
+- *(deps)* update oxc apps ([#189](https://github.com/oxc-project/oxc-zed/pull/189))
+- update packageManager to pnpm 11.0.4 ([#187](https://github.com/oxc-project/oxc-zed/pull/187))
+- *(deps)* update oxc apps ([#186](https://github.com/oxc-project/oxc-zed/pull/186))
+- *(deps)* update crate-ci/typos action to v1.46.1 ([#185](https://github.com/oxc-project/oxc-zed/pull/185))
+- *(deps)* update oxc-project/security-action action to v1.0.5 ([#183](https://github.com/oxc-project/oxc-zed/pull/183))
+- *(deps)* update oxc apps ([#182](https://github.com/oxc-project/oxc-zed/pull/182))
+- *(deps)* update crate-ci/typos action to v1.46.0 ([#180](https://github.com/oxc-project/oxc-zed/pull/180))
+- *(deps)* update oxc-project/security-action action to v1.0.3 ([#179](https://github.com/oxc-project/oxc-zed/pull/179))
+- *(deps)* update pnpm to v10.33.2 ([#177](https://github.com/oxc-project/oxc-zed/pull/177))
+- *(deps)* update crate-ci/typos action to v1.45.2 ([#176](https://github.com/oxc-project/oxc-zed/pull/176))
+- *(deps)* update oxc apps ([#175](https://github.com/oxc-project/oxc-zed/pull/175))
+- *(deps)* update oxc-project/security-action action to v1.0.2 ([#174](https://github.com/oxc-project/oxc-zed/pull/174))
+- *(deps)* update oxc apps ([#172](https://github.com/oxc-project/oxc-zed/pull/172))
+- make security analysis required-check friendly ([#171](https://github.com/oxc-project/oxc-zed/pull/171))
+- *(deps)* update actions/create-github-app-token action to v3.1.1 ([#170](https://github.com/oxc-project/oxc-zed/pull/170))
+- add security analysis workflow ([#169](https://github.com/oxc-project/oxc-zed/pull/169))
+- replace OXC_BOT_PAT with GitHub App tokens ([#167](https://github.com/oxc-project/oxc-zed/pull/167))
+- *(deps)* update dependency rust to v1.95.0 ([#168](https://github.com/oxc-project/oxc-zed/pull/168))
+- *(deps)* update crate-ci/typos action to v1.45.1 ([#165](https://github.com/oxc-project/oxc-zed/pull/165))
+- *(deps)* update oxc apps ([#163](https://github.com/oxc-project/oxc-zed/pull/163))
+
 ## [0.4.6](https://github.com/oxc-project/oxc-zed/compare/v0.4.5...v0.4.6) - 2026-04-08
 
 ### Fixed
