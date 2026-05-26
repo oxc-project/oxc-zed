@@ -2,7 +2,7 @@
   "name": "both",
   "packageManager": "pnpm@11.0.4",
   "devDependencies": {
-    "oxfmt": "^0.51.0",
+    "oxfmt": "^0.52.0",
     "oxlint": "^1.51.0"
   }
 }
