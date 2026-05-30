@@ -2,7 +2,7 @@ use crate::lsp::ZedLspSupport;
 use log::debug;
 use zed_extension_api::serde_json::Value;
 use zed_extension_api::settings::LspSettings;
-use zed_extension_api::{Command, EnvVars, LanguageServerId, Result, Worktree, node_binary_path};
+use zed_extension_api::{Command, EnvVars, LanguageServerId, Result, Worktree};
 
 pub struct ZedOxfmtLsp {}
 
@@ -17,6 +17,10 @@ impl ZedLspSupport for ZedOxfmtLsp {
         "oxfmt".to_string()
     }
 
+    fn vite_plus_subcommand(&self) -> &'static str {
+        "fmt"
+    }
+
     fn language_server_command(
         &self,
         language_server_id: &LanguageServerId,
@@ -25,13 +29,7 @@ impl ZedLspSupport for ZedOxfmtLsp {
         let settings = LspSettings::for_worktree(language_server_id.as_ref(), worktree)?;
         debug!("Oxfmt language_server_command LspSettings: {settings:?}");
 
-        let mut args = vec![
-            self.get_resolved_exe_path(worktree)?
-                .to_string_lossy()
-                .to_string(),
-            "--lsp".to_string(),
-        ];
-        let mut command = node_binary_path()?;
+        let (mut command, mut args) = self.resolve_lsp_invocation(worktree)?;
         let mut env = EnvVars::default();
         if let Some(binary) = settings.binary {
             if (binary.path.is_some() && binary.arguments.is_none())

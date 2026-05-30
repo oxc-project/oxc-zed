@@ -1,11 +1,12 @@
+use crate::vite_plus::{DetectResult, FileSystem, detect_vite_plus_project};
 use log::debug;
 use std::env;
 use std::path::{Path, PathBuf};
 use zed_extension_api::serde_json::{Value, from_str};
 use zed_extension_api::{
     Command, LanguageServerId, LanguageServerInstallationStatus, Result, Worktree,
-    npm_install_package, npm_package_installed_version, npm_package_latest_version,
-    set_language_server_installation_status,
+    node_binary_path, npm_install_package, npm_package_installed_version,
+    npm_package_latest_version, set_language_server_installation_status,
 };
 
 pub const OXLINT_SERVER_ID: &str = "oxlint";
@@ -25,21 +26,79 @@ pub trait ZedLspSupport: Send + Sync {
         let workspace_root_path = worktree.root_path();
         let workspace_root = Path::new(workspace_root_path.as_str());
 
-        for package_dir in [package_name.as_str(), "vite-plus"] {
-            if package_json
-                .as_ref()
-                .is_some_and(|package_json| package_exists(package_json, package_dir))
-            {
-                return self
-                    .get_exe_path_from(workspace_root, package_dir, package_name.as_str())
-                    .map(Some);
-            }
+        // Vite+ detection is handled separately (see `detect_vite_plus`); this
+        // only locates a plain oxlint/oxfmt install declared at the worktree root.
+        if package_json
+            .as_ref()
+            .is_some_and(|package_json| package_exists(package_json, package_name.as_str()))
+        {
+            return self
+                .get_exe_path_from(workspace_root, package_name.as_str(), package_name.as_str())
+                .map(Some);
         }
 
         Ok(None)
     }
 
+    /// Run the Vite+ detector against this worktree. Returns `None` when the
+    /// project is not Vite+; see [`DetectResult`] for the two `Some` cases.
+    fn detect_vite_plus(&self, worktree: &Worktree) -> Option<DetectResult> {
+        let root = worktree.root_path();
+        let fs = WorktreeFs::new(worktree);
+        detect_vite_plus_project(&fs, Path::new(root.as_str()))
+    }
+
+    /// The `vp` subcommand this language server maps to (`lint` / `fmt`).
+    fn vite_plus_subcommand(&self) -> &'static str;
+
+    /// Resolve the `(command, args)` to launch the language server, choosing
+    /// `vp <subcommand> --lsp` for a runnable Vite+ project and plain
+    /// `<tool> --lsp` otherwise.
+    fn resolve_lsp_invocation(&self, worktree: &Worktree) -> Result<(String, Vec<String>)> {
+        if let Some(result) = self.detect_vite_plus(worktree) {
+            if let Some(vp_path) = result.vp_path {
+                debug!(
+                    "Vite+ project detected at {:?}; launching {vp_path:?}",
+                    result.root
+                );
+                return Ok((
+                    node_binary_path()?,
+                    vec![
+                        vp_path.to_string_lossy().to_string(),
+                        self.vite_plus_subcommand().to_string(),
+                        "--lsp".to_string(),
+                    ],
+                ));
+            }
+            // Declared but not installed: no runnable `vp` reachable. Fall back
+            // to plain oxlint/oxfmt rather than spawning a bare `vp`.
+            debug!(
+                "Vite+ declared at {:?} but no runnable vp found; falling back to plain {}",
+                result.root,
+                self.get_package_name(),
+            );
+        }
+
+        Ok((
+            node_binary_path()?,
+            vec![
+                self.get_resolved_exe_path(worktree)?
+                    .to_string_lossy()
+                    .to_string(),
+                "--lsp".to_string(),
+            ],
+        ))
+    }
+
     fn exe_exists(&self, worktree: &Worktree) -> Result<bool> {
+        // A runnable Vite+ project supplies its own `vp`; the extension does
+        // not need to download oxlint/oxfmt from npm in that case.
+        if let Some(DetectResult {
+            vp_path: Some(_), ..
+        }) = self.detect_vite_plus(worktree)
+        {
+            return Ok(true);
+        }
         Ok(self.get_workspace_exe_path(worktree)?.is_some())
     }
 
@@ -125,4 +184,44 @@ pub trait ZedLspSupport: Send + Sync {
 fn package_exists(package_json: &Value, package_name: &str) -> bool {
     !package_json["dependencies"][package_name].is_null()
         || !package_json["devDependencies"][package_name].is_null()
+}
+
+/// [`FileSystem`] backed by a Zed [`Worktree`].
+///
+/// Zed's WASM API can only read files inside the worktree, relative to its
+/// root, so absolute paths are translated to worktree-relative ones and any
+/// path above the root resolves to "missing". This naturally bounds the
+/// detector's upward walk at the worktree root — the single-root limitation
+/// noted in the RFC.
+pub struct WorktreeFs<'a> {
+    worktree: &'a Worktree,
+    root: PathBuf,
+}
+
+impl<'a> WorktreeFs<'a> {
+    pub fn new(worktree: &'a Worktree) -> Self {
+        let root = PathBuf::from(worktree.root_path());
+        Self { worktree, root }
+    }
+}
+
+impl FileSystem for WorktreeFs<'_> {
+    fn read_text_file(&self, path: &Path) -> Option<String> {
+        let rel = path.strip_prefix(&self.root).ok()?;
+        self.worktree
+            .read_text_file(rel.to_string_lossy().as_ref())
+            .ok()
+    }
+
+    fn file_exists(&self, path: &Path) -> bool {
+        // The API exposes no stat; a successful text read is our existence
+        // probe. `bin/vp` and the marker files are small text launchers.
+        self.read_text_file(path).is_some()
+    }
+
+    fn which(&self, binary: &str) -> Option<PathBuf> {
+        // Zed *does* expose a `$PATH` lookup, contrary to the RFC's note that
+        // Phase 3 is unimplementable here.
+        self.worktree.which(binary).map(PathBuf::from)
+    }
 }

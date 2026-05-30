@@ -3,7 +3,7 @@ use log::debug;
 use std::path::{Path, PathBuf};
 use zed_extension_api::serde_json::Value;
 use zed_extension_api::settings::LspSettings;
-use zed_extension_api::{Command, EnvVars, LanguageServerId, Result, Worktree, node_binary_path};
+use zed_extension_api::{Command, EnvVars, LanguageServerId, Result, Worktree};
 
 pub struct ZedOxlintLsp {}
 
@@ -18,6 +18,10 @@ impl ZedLspSupport for ZedOxlintLsp {
         "oxlint".to_string()
     }
 
+    fn vite_plus_subcommand(&self) -> &'static str {
+        "lint"
+    }
+
     fn language_server_command(
         &self,
         language_server_id: &LanguageServerId,
@@ -26,13 +30,7 @@ impl ZedLspSupport for ZedOxlintLsp {
         let settings = LspSettings::for_worktree(language_server_id.as_ref(), worktree)?;
         debug!("Oxlint language_server_command LspSettings: {settings:?}");
 
-        let mut args = vec![
-            self.get_resolved_exe_path(worktree)?
-                .to_string_lossy()
-                .to_string(),
-            "--lsp".to_string(),
-        ];
-        let mut command = node_binary_path()?;
+        let (mut command, mut args) = self.resolve_lsp_invocation(worktree)?;
         let mut env = EnvVars::default();
         if let Some(binary) = settings.binary {
             if (binary.path.is_some() && binary.arguments.is_none())
