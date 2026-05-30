@@ -224,4 +224,12 @@ impl FileSystem for WorktreeFs<'_> {
         // Phase 3 is unimplementable here.
         self.worktree.which(binary).map(PathBuf::from)
     }
+
+    fn can_read_node_modules(&self) -> bool {
+        // Reads inside node_modules are unreliable in Zed's WASM sandbox
+        // (zed#10760), so the detector trusts the conventional vp path rather
+        // than read-verifying it — matching how this extension already
+        // resolves oxlint/oxfmt.
+        false
+    }
 }

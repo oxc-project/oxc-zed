@@ -34,6 +34,20 @@ pub trait FileSystem {
     /// Resolves a binary by name on `$PATH` (RFC Phase 3). `None` when the
     /// binary is absent or `$PATH` lookup is unavailable in this environment.
     fn which(&self, binary: &str) -> Option<PathBuf>;
+
+    /// Whether reads inside `node_modules` are reliable.
+    ///
+    /// Zed's WASM API cannot reliably read there ([zed#10760]) and `Path::exists`
+    /// does not work in the sandbox, so when this returns `false` the detector
+    /// trusts the conventional `node_modules/vite-plus/bin/vp` path instead of
+    /// read-verifying the install — exactly what the shipping extension already
+    /// does for `oxlint`/`oxfmt`. A missing install then surfaces as a
+    /// spawn-time error (the RFC's anticipated "upgrade hint" trigger).
+    ///
+    /// [zed#10760]: https://github.com/zed-industries/zed/issues/10760
+    fn can_read_node_modules(&self) -> bool {
+        true
+    }
 }
 
 /// Outcome of [`detect_vite_plus_project`].
@@ -72,18 +86,27 @@ fn is_root_workspace<F: FileSystem>(fs: &F, dir: &Path, pkg: Option<&Value>) -> 
     pkg.is_some_and(|pkg| !pkg["workspaces"].is_null())
 }
 
-/// Probe `dir/node_modules/vite-plus/bin/vp`, validated against that
-/// package's own `package.json` (`name === "vite-plus"`).
+/// The conventional `vp` launcher path for a project rooted at `dir`.
 ///
 /// Zed targets the real package launcher rather than the package manager's
 /// `node_modules/.bin/vp` shell shim, because pnpm stores bash scripts there
 /// that are not usable from Zed's headless WASM execution context.
+fn vp_launcher_path(dir: &Path) -> PathBuf {
+    dir.join("node_modules")
+        .join("vite-plus")
+        .join("bin")
+        .join("vp")
+}
+
+/// Probe [`vp_launcher_path`], validated against that package's own
+/// `package.json` (`name === "vite-plus"`). Used only where `node_modules`
+/// reads are reliable; see [`FileSystem::can_read_node_modules`].
 fn resolve_vp_at<F: FileSystem>(fs: &F, dir: &Path) -> Option<PathBuf> {
-    let pkg_dir = dir.join("node_modules").join("vite-plus");
-    let bin = pkg_dir.join("bin").join("vp");
+    let bin = vp_launcher_path(dir);
     if !fs.file_exists(&bin) {
         return None;
     }
+    let pkg_dir = dir.join("node_modules").join("vite-plus");
     let manifest = read_package_json(fs, &pkg_dir)?;
     (manifest["name"].as_str() == Some("vite-plus")).then_some(bin)
 }
@@ -130,7 +153,10 @@ enum Step<T> {
 ///    `package.json` that directly declares `vite-plus`. If none, return
 ///    `None` (not Vite+).
 /// 2. Walk up from that declaring directory (again bounded by the root
-///    workspace) for a project-scoped `node_modules/vite-plus/bin/vp`.
+///    workspace) for a project-scoped `node_modules/vite-plus/bin/vp`. When
+///    `node_modules` reads are unreliable (Zed; see
+///    [`FileSystem::can_read_node_modules`]) the conventional path at the
+///    declaring directory is trusted instead of probed.
 /// 3. Fall back to a `vp` on `$PATH` now that Vite+ is confirmed.
 ///
 /// Returns `Some(DetectResult { root, vp_path })`; `vp_path` is `None` when
@@ -146,10 +172,21 @@ pub fn detect_vite_plus_project<F: FileSystem>(fs: &F, start: &Path) -> Option<D
     })?;
 
     // Phase 2: resolve a project-scoped binary, bounded by the root workspace.
-    let vp_path = walk_up(fs, &root, |dir, _| match resolve_vp_at(fs, dir) {
-        Some(vp) => Step::Found(vp),
-        None => Step::Continue,
-    });
+    let vp_path = if fs.can_read_node_modules() {
+        // Reliable FS (Node extensions, tests): walk up read-verifying each
+        // candidate and validating it is a real `vite-plus` package.
+        walk_up(fs, &root, |dir, _| match resolve_vp_at(fs, dir) {
+            Some(vp) => Step::Found(vp),
+            None => Step::Continue,
+        })
+    } else {
+        // Zed: node_modules reads are unreliable, so trust the conventional
+        // path at the declaring directory. We cannot probe ancestors for a
+        // hoisted install (no reliable existence check), so we target the
+        // declaring directory only — the same `<root>/node_modules/...` path
+        // the extension uses today.
+        Some(vp_launcher_path(&root))
+    };
     if let Some(vp_path) = vp_path {
         return Some(DetectResult {
             root,
@@ -185,6 +222,7 @@ mod tests {
     struct FakeFs {
         files: BTreeMap<PathBuf, String>,
         path_vp: Option<PathBuf>,
+        unreliable_node_modules: bool,
     }
 
     impl FakeFs {
@@ -221,6 +259,12 @@ mod tests {
             self.path_vp = Some(PathBuf::from(path));
             self
         }
+
+        /// Model Zed: reads inside `node_modules` are unreliable (zed#10760).
+        fn unreliable_node_modules(mut self) -> Self {
+            self.unreliable_node_modules = true;
+            self
+        }
     }
 
     impl FileSystem for FakeFs {
@@ -234,6 +278,10 @@ mod tests {
 
         fn which(&self, binary: &str) -> Option<PathBuf> {
             (binary == "vp").then(|| self.path_vp.clone()).flatten()
+        }
+
+        fn can_read_node_modules(&self) -> bool {
+            !self.unreliable_node_modules
         }
     }
 
@@ -364,6 +412,30 @@ mod tests {
             .file("/repo/package.json", "{}")
             .declares("/repo/packages/app")
             .install("/repo");
+        assert_eq!(detect(&fs, "/repo"), None);
+    }
+
+    #[test]
+    fn zed_mode_trusts_constructed_vp_path() {
+        // Zed cannot reliably read node_modules, so even with NO visible
+        // install files the detector trusts the conventional path once the
+        // root package.json (reliably readable) declares vite-plus.
+        let fs = FakeFs::default()
+            .declares("/repo")
+            .unreliable_node_modules();
+        assert_eq!(
+            detect(&fs, "/repo"),
+            runnable("/repo", "/repo/node_modules/vite-plus/bin/vp"),
+        );
+    }
+
+    #[test]
+    fn zed_mode_plain_project_is_still_null() {
+        // Phase 1 reads the root package.json, which IS reliable in Zed; a
+        // plain project is still correctly rejected.
+        let fs = FakeFs::default()
+            .file("/repo/package.json", r#"{ "dependencies": {} }"#)
+            .unreliable_node_modules();
         assert_eq!(detect(&fs, "/repo"), None);
     }
 
