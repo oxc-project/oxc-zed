@@ -31,10 +31,6 @@ pub trait FileSystem {
     /// Whether a regular file exists at `path`.
     fn file_exists(&self, path: &Path) -> bool;
 
-    /// Resolves a binary by name on `$PATH` (RFC Phase 3). `None` when the
-    /// binary is absent or `$PATH` lookup is unavailable in this environment.
-    fn which(&self, binary: &str) -> Option<PathBuf>;
-
     /// Whether reads inside `node_modules` are reliable.
     ///
     /// Zed's WASM API cannot reliably read there ([zed#10760]) and `Path::exists`
@@ -147,20 +143,24 @@ enum Step<T> {
 }
 
 /// Detects whether `start` lives in a Vite+ project and, if so, locates a
-/// runnable `vp`. Implements the three RFC phases:
+/// project-scoped `vp`. Implements two phases:
 ///
 /// 1. Walk up from `start` to the root workspace looking for the first
 ///    `package.json` that directly declares `vite-plus`. If none, return
 ///    `None` (not Vite+).
-/// 2. Walk up from that declaring directory (again bounded by the root
-///    workspace) for a project-scoped `node_modules/vite-plus/bin/vp`. When
-///    `node_modules` reads are unreliable (Zed; see
-///    [`FileSystem::can_read_node_modules`]) the conventional path at the
-///    declaring directory is trusted instead of probed.
-/// 3. Fall back to a `vp` on `$PATH` now that Vite+ is confirmed.
+/// 2. Resolve a project-scoped `node_modules/vite-plus/bin/vp`. With reliable
+///    `node_modules` reads, walk up from the declaring directory (bounded by
+///    the root workspace) read-verifying each candidate; in Zed (unreliable
+///    reads; see [`FileSystem::can_read_node_modules`]) trust the conventional
+///    path at the declaring directory.
+///
+/// The RFC's Phase 3 (a global `vp` on `$PATH`) is deliberately not
+/// implemented: a missing install breaks `vp` regardless of binary source
+/// (the project's `vite.config.ts` imports `vite-plus`), so a global fallback
+/// cannot rescue it.
 ///
 /// Returns `Some(DetectResult { root, vp_path })`; `vp_path` is `None` when
-/// `vite-plus` is declared but no runnable `vp` exists anywhere reachable.
+/// `vite-plus` is declared but no project-scoped `vp` was found.
 pub fn detect_vite_plus_project<F: FileSystem>(fs: &F, start: &Path) -> Option<DetectResult> {
     // Phase 1: find the package.json that DIRECTLY declares vite-plus.
     let root = walk_up(fs, start, |dir, pkg| {
@@ -187,27 +187,8 @@ pub fn detect_vite_plus_project<F: FileSystem>(fs: &F, start: &Path) -> Option<D
         // the extension uses today.
         Some(vp_launcher_path(&root))
     };
-    if let Some(vp_path) = vp_path {
-        return Some(DetectResult {
-            root,
-            vp_path: Some(vp_path),
-        });
-    }
 
-    // Phase 3: fall back to a global vp now that Vite+ is confirmed.
-    // Unlike the RFC's note, Zed *can* do this: `Worktree::which` exposes a
-    // `$PATH` lookup. See the module-level docs.
-    if let Some(vp) = fs.which("vp") {
-        return Some(DetectResult {
-            root,
-            vp_path: Some(vp),
-        });
-    }
-
-    Some(DetectResult {
-        root,
-        vp_path: None,
-    })
+    Some(DetectResult { root, vp_path })
 }
 
 #[cfg(test)]
@@ -216,12 +197,10 @@ mod tests {
     use std::collections::BTreeMap;
 
     /// In-memory filesystem for the conformance fixtures. A path is present
-    /// in `files` iff it exists; readable files also carry contents. `which`
-    /// models a `vp` on `$PATH`.
+    /// in `files` iff it exists; readable files also carry contents.
     #[derive(Default)]
     struct FakeFs {
         files: BTreeMap<PathBuf, String>,
-        path_vp: Option<PathBuf>,
         unreliable_node_modules: bool,
     }
 
@@ -255,11 +234,6 @@ mod tests {
             self.file(&format!("{dir}/{file}"), "")
         }
 
-        fn vp_on_path(mut self, path: &str) -> Self {
-            self.path_vp = Some(PathBuf::from(path));
-            self
-        }
-
         /// Model Zed: reads inside `node_modules` are unreliable (zed#10760).
         fn unreliable_node_modules(mut self) -> Self {
             self.unreliable_node_modules = true;
@@ -274,10 +248,6 @@ mod tests {
 
         fn file_exists(&self, path: &Path) -> bool {
             self.files.contains_key(path)
-        }
-
-        fn which(&self, binary: &str) -> Option<PathBuf> {
-            (binary == "vp").then(|| self.path_vp.clone()).flatten()
         }
 
         fn can_read_node_modules(&self) -> bool {
@@ -343,17 +313,10 @@ mod tests {
     }
 
     #[test]
-    fn root_declared_no_local_no_global() {
+    fn root_declared_but_not_installed() {
+        // Declared, no project-scoped install: declared-but-not-installed.
         let fs = FakeFs::default().declares("/repo");
         assert_eq!(detect(&fs, "/repo"), declared_only("/repo"));
-    }
-
-    #[test]
-    fn root_declared_no_local_global_on_path() {
-        let fs = FakeFs::default()
-            .declares("/repo")
-            .vp_on_path("/usr/local/bin/vp");
-        assert_eq!(detect(&fs, "/repo"), runnable("/repo", "/usr/local/bin/vp"));
     }
 
     #[test]
@@ -362,15 +325,6 @@ mod tests {
         let fs = FakeFs::default()
             .file("/repo/package.json", "{}")
             .install("/repo");
-        assert_eq!(detect(&fs, "/repo"), None);
-    }
-
-    #[test]
-    fn global_vp_without_declaration() {
-        // Phase 1 fails, so Phase 3 (the $PATH vp) must never run.
-        let fs = FakeFs::default()
-            .file("/repo/package.json", "{}")
-            .vp_on_path("/usr/local/bin/vp");
         assert_eq!(detect(&fs, "/repo"), None);
     }
 
@@ -394,7 +348,7 @@ mod tests {
 
     #[test]
     fn yarn4_pnp() {
-        // Berry/PnP: declared, but no node_modules and no global vp.
+        // Berry/PnP: declared, but no node_modules install.
         let fs = FakeFs::default().declares("/repo");
         assert_eq!(detect(&fs, "/repo"), declared_only("/repo"));
     }

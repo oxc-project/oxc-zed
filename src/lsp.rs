@@ -219,12 +219,6 @@ impl FileSystem for WorktreeFs<'_> {
         self.read_text_file(path).is_some()
     }
 
-    fn which(&self, binary: &str) -> Option<PathBuf> {
-        // Zed *does* expose a `$PATH` lookup, contrary to the RFC's note that
-        // Phase 3 is unimplementable here.
-        self.worktree.which(binary).map(PathBuf::from)
-    }
-
     fn can_read_node_modules(&self) -> bool {
         // Reads inside node_modules are unreliable in Zed's WASM sandbox
         // (zed#10760), so the detector trusts the conventional vp path rather
