@@ -191,7 +191,7 @@ fn package_exists(package_json: &Value, package_name: &str) -> bool {
 /// Zed's WASM API can only read files inside the worktree, relative to its
 /// root, so absolute paths are translated to worktree-relative ones and any
 /// path above the root resolves to "missing". This naturally bounds the
-/// detector's upward walk at the worktree root — the single-root limitation
+/// detector's upward walk at the worktree root, the single-root limitation
 /// noted in the RFC.
 pub struct WorktreeFs<'a> {
     worktree: &'a Worktree,
@@ -222,7 +222,7 @@ impl FileSystem for WorktreeFs<'_> {
     fn can_read_node_modules(&self) -> bool {
         // Reads inside node_modules are unreliable in Zed's WASM sandbox
         // (zed#10760), so the detector trusts the conventional vp path rather
-        // than read-verifying it — matching how this extension already
+        // than read-verifying it, matching how this extension already
         // resolves oxlint/oxfmt.
         false
     }

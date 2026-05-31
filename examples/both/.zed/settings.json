@@ -3,6 +3,7 @@
     "oxlint": {
       "initialization_options": {
         "settings": {
+          // Ignored in Vite+ projects: `vp` resolves lint config from your Vite config.
           "configPath": null,
           "run": "onType",
           "disableNestedConfig": false,
@@ -14,6 +15,7 @@
     "oxfmt": {
       "initialization_options": {
         "settings": {
+          // Ignored in Vite+ projects: `vp` resolves format config from your Vite config.
           "fmt.configPath": null,
           "run": "onSave"
         }

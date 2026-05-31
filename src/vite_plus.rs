@@ -36,7 +36,7 @@ pub trait FileSystem {
     /// Zed's WASM API cannot reliably read there ([zed#10760]) and `Path::exists`
     /// does not work in the sandbox, so when this returns `false` the detector
     /// trusts the conventional `node_modules/vite-plus/bin/vp` path instead of
-    /// read-verifying the install — exactly what the shipping extension already
+    /// read-verifying the install, exactly what the shipping extension already
     /// does for `oxlint`/`oxfmt`. A missing install then surfaces as a
     /// spawn-time error (the RFC's anticipated "upgrade hint" trigger).
     ///
@@ -49,9 +49,9 @@ pub trait FileSystem {
 /// Outcome of [`detect_vite_plus_project`].
 ///
 /// Mirrors the RFC's `{ root: string; vpPath?: string } | null`:
-/// - `None` (from the detector) — not a Vite+ project.
-/// - `Some` with `vp_path = Some(_)` — Vite+ and runnable.
-/// - `Some` with `vp_path = None` — declared but no usable `vp` (install hint).
+/// - `None` (from the detector): not a Vite+ project.
+/// - `Some` with `vp_path = Some(_)`: Vite+ and runnable.
+/// - `Some` with `vp_path = None`: declared but no usable `vp` (install hint).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DetectResult {
     /// The ancestor whose `package.json` directly declares `vite-plus`.
@@ -183,7 +183,7 @@ pub fn detect_vite_plus_project<F: FileSystem>(fs: &F, start: &Path) -> Option<D
         // Zed: node_modules reads are unreliable, so trust the conventional
         // path at the declaring directory. We cannot probe ancestors for a
         // hoisted install (no reliable existence check), so we target the
-        // declaring directory only — the same `<root>/node_modules/...` path
+        // declaring directory only, the same `<root>/node_modules/...` path
         // the extension uses today.
         Some(vp_launcher_path(&root))
     };
