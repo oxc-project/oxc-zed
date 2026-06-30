@@ -4,8 +4,8 @@ use std::path::{Path, PathBuf};
 use zed_extension_api::serde_json::{Value, from_str};
 use zed_extension_api::{
     Command, LanguageServerId, LanguageServerInstallationStatus, Result, Worktree,
-    npm_install_package, npm_package_installed_version, npm_package_latest_version,
-    set_language_server_installation_status,
+    node_binary_path, npm_install_package, npm_package_installed_version,
+    npm_package_latest_version, set_language_server_installation_status,
 };
 
 pub const OXLINT_SERVER_ID: &str = "oxlint";
@@ -67,6 +67,29 @@ pub trait ZedLspSupport: Send + Sync {
         );
         debug!("Using exe installation from extension at path {path:?}");
         path
+    }
+
+    fn is_yarn_pnp(&self, worktree: &Worktree) -> bool {
+        // .pnp.cjs is the canonical Yarn Berry PnP indicator
+        // .pnp.js covers older Yarn Berry projects
+        worktree.read_text_file(".pnp.cjs").is_ok()
+            || worktree.read_text_file(".pnp.js").is_ok()
+    }
+
+    fn get_default_command_and_args(
+        &self,
+        worktree: &Worktree,
+    ) -> Result<(String, Vec<String>)> {
+        if self.exe_exists(worktree)? && self.is_yarn_pnp(worktree) {
+            debug!("Detected Yarn PnP — using yarn exec");
+            return Ok(("yarn".to_string(), vec!["exec".to_string(), self.get_package_name()]));
+        }
+        // Standard node_modules approach (npm / pnpm / yarn --linker=node-modules)
+        let exe_path = self.get_resolved_exe_path(worktree)?;
+        Ok((
+            node_binary_path()?,
+            vec![exe_path.to_string_lossy().to_string()],
+        ))
     }
 
     fn get_package_name(&self) -> String;
