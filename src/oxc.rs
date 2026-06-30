@@ -1,6 +1,7 @@
 mod lsp;
 mod oxfmt;
 mod oxlint;
+mod vite_plus;
 
 use crate::lsp::{OXFMT_SERVER_ID, OXLINT_SERVER_ID, ZedLspSupport};
 use crate::oxfmt::ZedOxfmtLsp;

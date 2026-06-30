@@ -31,6 +31,10 @@ Configuration is managed in your `.zed/settings.json` file. Examples are availab
 
 See https://github.com/oxc-project/oxc/tree/main/crates/oxc_language_server for the options that are supported by the language server.
 
+### Vite+ projects
+
+When a workspace declares [`vite-plus`](https://github.com/voidzero-dev/vite-plus), this extension launches `vp lint --lsp` / `vp fmt --lsp` instead of plain `oxlint` / `oxfmt`. In that mode `vp` resolves the lint and format configuration from your Vite config, so the `configPath` (oxlint) and `fmt.configPath` (oxfmt) settings are **ignored**. The other LSP settings (`run`, `fixKind`, `disableNestedConfig`, `unusedDisableDirectives`) still apply.
+
 ## ❤ Who's [Sponsoring Oxc](https://github.com/sponsors/Boshen)?
 
 <p align="center">
