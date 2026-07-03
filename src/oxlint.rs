@@ -27,9 +27,7 @@ impl ZedLspSupport for ZedOxlintLsp {
         debug!("Oxlint language_server_command LspSettings: {settings:?}");
 
         let mut args = vec![
-            self.get_resolved_exe_path(worktree)?
-                .to_string_lossy()
-                .to_string(),
+            self.get_resolved_exe_path(worktree)?.to_string_lossy().to_string(),
             "--lsp".to_string(),
         ];
         let mut command = node_binary_path()?;
@@ -74,10 +72,7 @@ impl ZedLspSupport for ZedOxlintLsp {
         let settings = LspSettings::for_worktree(language_server_id.as_ref(), worktree)?;
         debug!("Oxfmt language_server_workspace_configuration LspSettings: {settings:?}");
 
-        Ok(settings
-            .initialization_options
-            .as_ref()
-            .and_then(|v| v.get("settings").cloned()))
+        Ok(settings.initialization_options.as_ref().and_then(|v| v.get("settings").cloned()))
     }
 }
 

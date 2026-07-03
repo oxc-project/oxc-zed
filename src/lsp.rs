@@ -16,9 +16,7 @@ pub trait ZedLspSupport: Send + Sync {
         // Reading files from node_modules doesn't seem to be possible now,
         // https://github.com/zed-industries/zed/issues/10760.
         // Instead we try to read the `package.json`, see if the package is installed
-        let package_json = worktree
-            .read_text_file("package.json")
-            .unwrap_or(String::from(r#"{}"#));
+        let package_json = worktree.read_text_file("package.json").unwrap_or(String::from(r#"{}"#));
 
         let package_json: Option<Value> = from_str(package_json.as_str()).ok();
         let package_name = self.get_package_name();
@@ -46,11 +44,7 @@ pub trait ZedLspSupport: Send + Sync {
     fn get_exe_path_from(&self, from: &Path, package_dir: &str, exe_name: &str) -> Result<PathBuf> {
         // Doesn't use `node_modules/.bin` due to PNPM storing bash scripts there
         // instead of Node.js scripts.
-        Ok(from
-            .join("node_modules")
-            .join(package_dir)
-            .join("bin")
-            .join(exe_name))
+        Ok(from.join("node_modules").join(package_dir).join("bin").join(exe_name))
     }
 
     fn get_resolved_exe_path(&self, worktree: &Worktree) -> Result<PathBuf> {

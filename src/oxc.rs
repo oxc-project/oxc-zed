@@ -91,9 +91,7 @@ impl Extension for OxcExtension {
                 .language_server_command(language_server_id, worktree);
         }
 
-        Err(format!(
-            "Unsupported language server id: {language_server_id:?}"
-        ))
+        Err(format!("Unsupported language server id: {language_server_id:?}"))
     }
 
     fn language_server_initialization_options(
@@ -117,9 +115,7 @@ impl Extension for OxcExtension {
                 .language_server_initialization_options(language_server_id, worktree);
         }
 
-        Err(format!(
-            "Unsupported language server id: {language_server_id:?}"
-        ))
+        Err(format!("Unsupported language server id: {language_server_id:?}"))
     }
 
     fn language_server_workspace_configuration(
@@ -143,9 +139,7 @@ impl Extension for OxcExtension {
                 .language_server_workspace_configuration(language_server_id, worktree);
         }
 
-        Err(format!(
-            "Unsupported language server id: {language_server_id:?}"
-        ))
+        Err(format!("Unsupported language server id: {language_server_id:?}"))
     }
 }
 
