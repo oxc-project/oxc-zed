@@ -35,6 +35,6 @@ See https://github.com/oxc-project/oxc/tree/main/crates/oxc_language_server for 
 
 <p align="center">
   <a href="https://github.com/sponsors/Boshen">
-    <img src="https://raw.githubusercontent.com/Boshen/sponsors/main/sponsors.svg" alt="My sponsors" />
+    <img src="https://raw.githubusercontent.com/Boshen/sponsors/main/sponsors.svg" alt="Our sponsors" />
   </a>
 </p>
