@@ -31,10 +31,10 @@ Configuration is managed in your `.zed/settings.json` file. Examples are availab
 
 See https://github.com/oxc-project/oxc/tree/main/crates/oxc_language_server for the options that are supported by the language server.
 
-## ❤ Who's [Sponsoring Oxc](https://github.com/sponsors/Boshen)?
+# [Sponsored By](https://oxc.rs/sponsor)
 
 <p align="center">
-  <a href="https://github.com/sponsors/Boshen">
-    <img src="https://raw.githubusercontent.com/Boshen/sponsors/main/sponsors.svg" alt="Our sponsors" />
+  <a href="https://oxc.rs/sponsor">
+    <img src="https://raw.githubusercontent.com/oxc-project/sponsors/main/sponsors.svg" alt="Our sponsors" />
   </a>
 </p>
