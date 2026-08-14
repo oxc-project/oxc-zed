@@ -17,3 +17,9 @@ path = "src/oxc.rs"
 simple_logger = "5.1.0"
 log = "0.4.29"
 zed_extension_api = "0.7.0"
+
+[profile.dev]
+debug = "line-tables-only"
+
+[profile.dev.package."*"]
+debug = false
