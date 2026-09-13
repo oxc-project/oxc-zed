@@ -26,23 +26,67 @@ const child = spawn(command, args, {
   cwd: root,
   env: process.env,
   stdio: "inherit",
+  // Vite+ spawns the real server. Give its descendants a group we can stop
+  // without signaling Zed or another language server.
+  detached: process.platform !== "win32",
   windowsVerbatimArguments: batch,
 });
+
+let groupId = child.pid;
+let stopping = false;
+
+function signalGroup(signal) {
+  if (groupId === undefined) return false;
+
+  try {
+    process.kill(-groupId, signal);
+    return true;
+  } catch (error) {
+    if (error.code !== "ESRCH") throw error;
+    groupId = undefined;
+    return false;
+  }
+}
+
+function stop(signal = "SIGTERM") {
+  if (process.platform === "win32") {
+    if (child.exitCode === null && child.signalCode === null) child.kill(signal);
+    return;
+  }
+
+  if (stopping) return;
+  stopping = true;
+  if (!signalGroup(signal)) return;
+
+  // Keep the launcher alive while descendants exit, even if vp already died.
+  const deadline = Date.now() + 1000;
+  const timer = setInterval(() => {
+    if (!signalGroup(0)) {
+      clearInterval(timer);
+    } else if (Date.now() >= deadline) {
+      signalGroup("SIGKILL");
+      clearInterval(timer);
+    }
+  }, 50);
+}
 
 child.on("error", (error) => {
   console.error(`${hint}\n${error.message}`);
   process.exitCode = 1;
+  stop();
 });
 
 child.on("exit", (code, signal) => {
   if (code) console.error(hint);
   process.exitCode = code ?? (signal ? 1 : 0);
+  stop();
 });
 
 for (const signal of ["SIGINT", "SIGTERM"]) {
-  process.on(signal, () => child.kill(signal));
+  process.on(signal, () => stop(signal));
 }
 
 process.on("exit", () => {
-  if (child.exitCode === null) child.kill();
+  if (process.platform === "win32") stop();
+  else signalGroup("SIGKILL");
 });

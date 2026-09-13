@@ -406,6 +406,24 @@ fn launcher_reports_upgrade_hint_on_failure() {
 }
 
 #[test]
+#[cfg(unix)]
+fn launcher_cleans_up_server_and_helper_descendants() {
+    let tree = Tree::new();
+    tree.put("launcher.cjs", LAUNCH_SCRIPT);
+    tree.put("lifecycle.cjs", include_str!("fixtures/launcher-lifecycle.cjs"));
+    let output = Command::new(node())
+        .args([&tree.path("lifecycle.cjs"), &tree.path("launcher.cjs"), &tree.path(".")])
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}\n{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
+
+#[test]
 fn standalone_subpackage_uses_hoisted_install_without_vite_plus_wrappers() {
     let tree = Tree::new();
     tree.put("repo/package.json", r#"{"workspaces":["app"]}"#);
