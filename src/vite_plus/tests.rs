@@ -3,7 +3,7 @@ use crate::binary_resolver::{INSPECT_SCRIPT, standalone_path};
 use std::{
     fs,
     path::{Path, PathBuf},
-    process::{Command, Output},
+    process::Command,
     sync::{
         OnceLock,
         atomic::{AtomicU64, Ordering},
@@ -15,6 +15,7 @@ const NPM_SHELL_SHIM: &str = include_str!("fixtures/npm-vp.sh");
 const NPM_CMD_SHIM: &str = include_str!("fixtures/npm-vp.cmd");
 
 struct Tree(PathBuf);
+
 impl Tree {
     fn new() -> Self {
         static NEXT: AtomicU64 = AtomicU64::new(0);
@@ -26,11 +27,13 @@ impl Tree {
         fs::create_dir_all(&root).unwrap();
         Self(root)
     }
+
     fn put(&self, name: &str, content: &str) {
         let file = self.0.join(name);
         fs::create_dir_all(file.parent().unwrap()).unwrap();
         fs::write(file, content).unwrap();
     }
+
     fn install(&self, dir: &str, package: &str, bin: &str) {
         self.put(
             &format!("{dir}/node_modules/{package}/package.json"),
@@ -41,13 +44,16 @@ impl Tree {
             "#!/usr/bin/env node\nconsole.log('vp');",
         );
     }
+
     fn path(&self, path: &str) -> String {
         self.0.join(path).to_string_lossy().into_owned()
     }
+
     fn directories(&self, start: &str) -> Vec<Value> {
         probe("ancestors", &self.path(start), "oxlint", "").as_array().unwrap().clone()
     }
 }
+
 impl Drop for Tree {
     fn drop(&mut self) {
         fs::remove_dir_all(&self.0).unwrap();
@@ -66,15 +72,12 @@ fn node() -> &'static str {
     })
 }
 
-fn probe_output(mode: &str, root: &str, tool: &str, search_path: &str) -> Output {
-    Command::new(node())
+fn probe(mode: &str, root: &str, tool: &str, search_path: &str) -> Value {
+    let output = Command::new(node())
         .args(["-e", INSPECT_SCRIPT, "--", mode, root, tool])
         .env("PATH", search_path)
         .output()
-        .unwrap()
-}
-fn probe(mode: &str, root: &str, tool: &str, search_path: &str) -> Value {
-    let output = probe_output(mode, root, tool, search_path);
+        .unwrap();
     assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
     from_slice(&output.stdout).unwrap()
 }
@@ -137,11 +140,13 @@ fn rfc_conformance_fixtures() {
             _ => unreachable!(),
         }
         if declared {
-            tree.put(&format!("{root}/package.json"), &json!({"devDependencies":{"vite-plus":"*"}, "workspaces": if root == "repo" { json!(["packages/*"]) } else { Value::Null }}).to_string());
-            // A subpackage is not a workspace boundary.
-            if root != "repo" {
-                tree.put(&format!("{root}/package.json"), r#"{"dependencies":{"vite-plus":"*"}}"#);
-            }
+            let package = if root == "repo" {
+                json!({"devDependencies": {"vite-plus": "*"}, "workspaces": ["packages/*"]})
+            } else {
+                // A subpackage is not a workspace boundary.
+                json!({"dependencies": {"vite-plus": "*"}})
+            };
+            tree.put(&format!("{root}/package.json"), &package.to_string());
         }
         if let Some(dir) = install {
             tree.install(dir, "vite-plus", "vp");

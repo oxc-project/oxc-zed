@@ -29,7 +29,7 @@ function packageEntry(dir, name, bin) {
   return (name !== "vite-plus" || pkg?.name === name) && isFile(entry) ? entry : null;
 }
 
-function ancestors(start) {
+function ancestors(start, tool) {
   const directories = [];
   let dir = path.resolve(start);
   while (true) {
@@ -54,13 +54,12 @@ function readHeader(file) {
   // Read only the beginning: vp may be a large native executable.
   const fd = fs.openSync(file, "r");
   const buffer = Buffer.alloc(8192);
-  let header;
   try {
-    header = buffer.subarray(0, fs.readSync(fd, buffer, 0, buffer.length, 0)).toString();
+    const bytesRead = fs.readSync(fd, buffer, 0, buffer.length, 0);
+    return buffer.subarray(0, bytesRead).toString();
   } finally {
     fs.closeSync(fd);
   }
-  return header;
 }
 
 function shimTarget(header) {
@@ -130,35 +129,39 @@ function executable(file) {
   }
 
   // Only unwrap a complete known shim, including symlinks to global shims.
-  const recorded = fs.statSync(real).size <= 8192 && shimTarget(header);
-  if (recorded) {
-    const target = recorded
+  const shimPath = fs.statSync(real).size <= 8192 && shimTarget(header);
+  if (shimPath) {
+    const target = shimPath
       .replace(/^(?:\$basedir|%~dp0|%dp0%)[\\/]/, path.dirname(real) + path.sep)
       .replaceAll("\\", path.sep);
     if (!path.isAbsolute(target) || path.resolve(target) === real || !isFile(target)) {
       return { path: file, node: false };
     }
-    const text = readHeader(target);
-    if (/^#![^\r\n]*\bnode\b/.test(text)) return { path: path.resolve(target), node: true };
+    const targetHeader = readHeader(target);
+    if (/^#![^\r\n]*\bnode\b/.test(targetHeader)) return { path: path.resolve(target), node: true };
   }
   return { path: file, node: false };
+}
+
+function globalExecutable(start) {
+  const pathKey = Object.keys(process.env).find((key) => key.toUpperCase() === "PATH");
+  const names = process.platform === "win32" ? ["vp.cmd", "vp.exe", "vp"] : ["vp"];
+  const directories = (process.env[pathKey] || "").split(path.delimiter).filter(Boolean);
+  for (const dir of directories) {
+    for (const name of names) {
+      const result = executable(path.resolve(start, dir, name));
+      if (result) return result;
+    }
+  }
+  return null;
 }
 
 try {
   let result;
   if (mode === "ancestors") {
-    result = ancestors(start);
+    result = ancestors(start, tool);
   } else if (mode === "global") {
-    result = null;
-    const pathKey = Object.keys(process.env).find((key) => key.toUpperCase() === "PATH");
-    const names = process.platform === "win32" ? ["vp.cmd", "vp.exe", "vp"] : ["vp"];
-    for (const dir of (process.env[pathKey] || "").split(path.delimiter).filter(Boolean)) {
-      for (const name of names) {
-        result = executable(path.resolve(start, dir, name));
-        if (result) break;
-      }
-      if (result) break;
-    }
+    result = globalExecutable(start);
   } else {
     result = executable(path.resolve(start, tool));
   }

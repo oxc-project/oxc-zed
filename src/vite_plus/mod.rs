@@ -1,6 +1,7 @@
-use crate::binary_resolver::declares_package;
-use zed_extension_api::Result;
+use crate::binary_resolver::{declares_package, inspect};
+use log::debug;
 use zed_extension_api::serde_json::Value;
+use zed_extension_api::{Command, EnvVars, Result};
 
 pub const LAUNCH_SCRIPT: &str = include_str!("launch_vp.js");
 
@@ -43,6 +44,39 @@ impl Options {
 pub struct Project {
     pub root: String,
     pub vp_path: Option<String>,
+}
+
+impl Project {
+    pub fn language_server_command(
+        &self,
+        node: String,
+        worktree_root: &str,
+        tool: &str,
+        env: EnvVars,
+    ) -> Result<Command> {
+        let executable = if let Some(path) = &self.vp_path {
+            // Explicit relative paths are relative to the opened worktree.
+            inspect(&node, "executable", worktree_root, path, &env)?
+        } else {
+            inspect(&node, "global", worktree_root, "vp", &env)?
+        };
+        let path = executable["path"].as_str().ok_or_else(|| {
+            format!(
+                "Vite+ selected for {} but vp was not found. Install dependencies (for example, pnpm install), or set initialization_options.settings.vpPath, then restart the language server.",
+                self.root
+            )
+        })?;
+        let loader = if executable["node"] == true { "node" } else { "native" };
+        debug!("Starting vp {tool} --lsp from {path} in {}", self.root);
+        Ok(Command {
+            command: node,
+            args: ["-e", LAUNCH_SCRIPT, "--", &self.root, path, loader, tool]
+                .into_iter()
+                .map(str::to_owned)
+                .collect(),
+            env,
+        })
+    }
 }
 
 /// Port of RFC #1614's identity and local resolution phases. The filesystem

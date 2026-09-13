@@ -12,15 +12,18 @@ const searchPath = process.env[pathKey] || "";
 delete process.env[pathKey];
 process.env.PATH = path.dirname(process.execPath) + path.delimiter + searchPath;
 
-const batch = loader !== "node" && process.platform === "win32" && /\.(cmd|bat)$/i.test(executable);
-const command = batch
-  ? process.env.ComSpec || process.env.COMSPEC || "cmd.exe"
-  : loader === "node"
-    ? process.execPath
-    : executable;
-const args = batch
-  ? ["/d", "/s", "/c", `""${executable}" ${tool} --lsp"`]
-  : [...(loader === "node" ? [executable] : []), tool, "--lsp"];
+const isWindows = process.platform === "win32";
+const batch = loader !== "node" && isWindows && /\.(cmd|bat)$/i.test(executable);
+let command = executable;
+let args = [tool, "--lsp"];
+
+if (loader === "node") {
+  command = process.execPath;
+  args.unshift(executable);
+} else if (batch) {
+  command = process.env.ComSpec || process.env.COMSPEC || "cmd.exe";
+  args = ["/d", "/s", "/c", `""${executable}" ${tool} --lsp"`];
+}
 
 const child = spawn(command, args, {
   cwd: root,
@@ -28,7 +31,7 @@ const child = spawn(command, args, {
   stdio: "inherit",
   // Vite+ spawns the real server. Give its descendants a group we can stop
   // without signaling Zed or another language server.
-  detached: process.platform !== "win32",
+  detached: !isWindows,
   windowsVerbatimArguments: batch,
 });
 
@@ -49,7 +52,7 @@ function signalGroup(signal) {
 }
 
 function stop(signal = "SIGTERM") {
-  if (process.platform === "win32") {
+  if (isWindows) {
     if (child.exitCode === null && child.signalCode === null) child.kill(signal);
     return;
   }
@@ -87,6 +90,6 @@ for (const signal of ["SIGINT", "SIGTERM"]) {
 }
 
 process.on("exit", () => {
-  if (process.platform === "win32") stop();
+  if (isWindows) stop();
   else signalGroup("SIGKILL");
 });

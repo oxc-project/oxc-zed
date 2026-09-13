@@ -1,5 +1,5 @@
 use crate::binary_resolver;
-use crate::vite_plus::{self, LAUNCH_SCRIPT, Options};
+use crate::vite_plus::{self, Options};
 use log::debug;
 use std::{collections::BTreeMap, env};
 use zed_extension_api::serde_json::{Value, json};
@@ -47,29 +47,9 @@ pub trait ZedLspSupport {
         let directories = directories.as_array().ok_or("Expected a list of project directories")?;
 
         if let Some(project) = vite_plus::detect_project(directories, &options) {
-            let executable = if let Some(path) = &project.vp_path {
-                // Explicit relative paths are relative to the opened worktree.
-                binary_resolver::inspect(&node, "executable", &worktree.root_path(), path, &env)?
-            } else {
-                binary_resolver::inspect(&node, "global", &worktree.root_path(), "vp", &env)?
-            };
-            let path = executable["path"].as_str().ok_or_else(|| {
-                format!(
-                    "Vite+ selected for {} but vp was not found. Install dependencies (for example, pnpm install), or set initialization_options.settings.vpPath, then restart the language server.",
-                    project.root
-                )
-            })?;
-            let loader = if executable["node"] == true { "node" } else { "native" };
             let tool = if self.package_name() == OXLINT_SERVER_ID { "lint" } else { "fmt" };
-            debug!("Starting vp {tool} --lsp from {path} in {}", project.root);
-            let command = Command {
-                command: node,
-                args: ["-e", LAUNCH_SCRIPT, "--", &project.root, path, loader, tool]
-                    .into_iter()
-                    .map(str::to_owned)
-                    .collect(),
-                env,
-            };
+            let command =
+                project.language_server_command(node, &worktree.root_path(), tool, env)?;
             self.sources_mut().insert(worktree.id(), true);
             return Ok(command);
         }
@@ -210,12 +190,12 @@ fn configured_settings(settings: &LspSettings) -> Option<Value> {
     // Zed's workspace settings override the matching initialization settings.
     // Both callbacks use this merge; Zed subsequently reapplies the user's
     // initialization_options before sending the initialize request.
-    if let Some(settings) = &settings.settings {
-        let target = config.get_or_insert_with(|| json!({}));
-        if let (Some(target), Some(settings)) = (target.as_object_mut(), settings.as_object()) {
-            target.extend(settings.clone());
-        } else {
-            *target = settings.clone();
+    if let Some(workspace) = &settings.settings {
+        match (&mut config, workspace) {
+            (Some(Value::Object(target)), Value::Object(overrides)) => {
+                target.extend(overrides.clone());
+            }
+            _ => config = Some(workspace.clone()),
         }
     }
     config
