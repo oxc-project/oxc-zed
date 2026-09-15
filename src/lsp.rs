@@ -1,6 +1,6 @@
 use crate::binary_resolver;
 use crate::vite_plus::{self, Options};
-use log::debug;
+use log::{debug, warn};
 use std::{collections::BTreeMap, env};
 use zed_extension_api::serde_json::{Value, json};
 use zed_extension_api::settings::LspSettings;
@@ -123,6 +123,14 @@ pub trait ZedLspSupport {
         Ok(workspace_configuration(&settings, self.package_name(), vite_plus))
     }
 
+    /// Ensures the extension-managed copy of the package is installed and,
+    /// when possible, up to date.
+    ///
+    /// The registry lookup and the install can fail for reasons unrelated to
+    /// the extension: no network, a restrictive `.npmrc`, or corepack refusing
+    /// to run npm in a project that declares another package manager. When a
+    /// copy is already installed, those failures are logged and the installed
+    /// copy is used. Only a missing install is a hard error.
     fn update_extension_language_server_if_outdated(
         &self,
         language_server_id: &LanguageServerId,
@@ -132,15 +140,52 @@ pub trait ZedLspSupport {
             &LanguageServerInstallationStatus::CheckingForUpdate,
         );
         let package_name = self.package_name();
-        let current_version = npm_package_installed_version(package_name)?;
-        let latest_version = npm_package_latest_version(package_name)?;
-        if current_version.as_deref() != Some(latest_version.as_str()) {
+        let installed_version = npm_package_installed_version(package_name)?;
+
+        let latest_version = match npm_package_latest_version(package_name) {
+            Ok(version) => version,
+            Err(err) => {
+                let Some(installed_version) = installed_version else {
+                    set_language_server_installation_status(
+                        language_server_id,
+                        &LanguageServerInstallationStatus::Failed(err.clone()),
+                    );
+                    return Err(format!(
+                        "Failed to fetch the latest version of {package_name} and no version is installed: {err}"
+                    ));
+                };
+                warn!(
+                    "Failed to fetch the latest version of {package_name}, using installed version {installed_version}: {err}"
+                );
+                set_language_server_installation_status(
+                    language_server_id,
+                    &LanguageServerInstallationStatus::None,
+                );
+                return Ok(());
+            }
+        };
+
+        if installed_version.as_deref() != Some(latest_version.as_str()) {
             set_language_server_installation_status(
                 language_server_id,
                 &LanguageServerInstallationStatus::Downloading,
             );
-            npm_install_package(package_name, &latest_version)?;
+            if let Err(err) = npm_install_package(package_name, &latest_version) {
+                let Some(installed_version) = installed_version else {
+                    set_language_server_installation_status(
+                        language_server_id,
+                        &LanguageServerInstallationStatus::Failed(err.clone()),
+                    );
+                    return Err(format!(
+                        "Failed to install {package_name}@{latest_version}: {err}"
+                    ));
+                };
+                warn!(
+                    "Failed to install {package_name}@{latest_version}, using installed version {installed_version}: {err}"
+                );
+            }
         }
+
         set_language_server_installation_status(
             language_server_id,
             &LanguageServerInstallationStatus::None,
