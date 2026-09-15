@@ -123,14 +123,11 @@ pub trait ZedLspSupport {
         Ok(workspace_configuration(&settings, self.package_name(), vite_plus))
     }
 
-    /// Ensures the extension-managed copy of the package is installed and,
-    /// when possible, up to date.
+    /// Installs or updates the extension-managed copy of the package.
     ///
-    /// The registry lookup and the install can fail for reasons unrelated to
-    /// the extension: no network, a restrictive `.npmrc`, or corepack refusing
-    /// to run npm in a project that declares another package manager. When a
-    /// copy is already installed, those failures are logged and the installed
-    /// copy is used. Only a missing install is a hard error.
+    /// Installs `<package>@latest` so npm applies the user's `.npmrc` rules
+    /// such as `min-release-age` (#218). If the registry lookup or the install
+    /// fails but a copy is already installed, uses that copy (#256).
     fn update_extension_language_server_if_outdated(
         &self,
         language_server_id: &LanguageServerId,
@@ -170,18 +167,16 @@ pub trait ZedLspSupport {
                 language_server_id,
                 &LanguageServerInstallationStatus::Downloading,
             );
-            if let Err(err) = npm_install_package(package_name, &latest_version) {
+            if let Err(err) = npm_install_package(package_name, "latest") {
                 let Some(installed_version) = installed_version else {
                     set_language_server_installation_status(
                         language_server_id,
                         &LanguageServerInstallationStatus::Failed(err.clone()),
                     );
-                    return Err(format!(
-                        "Failed to install {package_name}@{latest_version}: {err}"
-                    ));
+                    return Err(format!("Failed to install {package_name}: {err}"));
                 };
                 warn!(
-                    "Failed to install {package_name}@{latest_version}, using installed version {installed_version}: {err}"
+                    "Failed to install {package_name}, using installed version {installed_version}: {err}"
                 );
             }
         }
