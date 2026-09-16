@@ -3,6 +3,6 @@
   "private": true,
   "type": "module",
   "devDependencies": {
-    "vite-plus": "^0.3.1"
+    "vite-plus": "^0.3.2"
   }
 }
