@@ -7,7 +7,14 @@ schema_version = 1
 version = "0.4.7"
 
 [language_servers.oxlint]
-code_actions_kind = ["quickfix", "source.fixAll.oxc"]
+# Zed reads this list only when the server advertises no code action kinds in its
+# initialize result, so it mirrors the kinds oxlint advertises.
+code_action_kinds = [
+    "quickfix",
+    "source.fixAll.oxc",
+    "source.fixAllDangerous.oxc",
+    "source.fixAll",
+]
 language = "JavaScript"
 languages = [
     "JavaScript",
