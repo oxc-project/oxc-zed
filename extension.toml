@@ -6,6 +6,27 @@ repository = "https://github.com/oxc-project/oxc-zed"
 schema_version = 1
 version = "0.4.7"
 
+# Zed selects Node's absolute path at runtime. Capability commands match exact
+# strings or "*"; "node" does not match that absolute path.
+# These calls run the bundled src/binary_resolver/inspect.js to read ancestor
+# manifests and executable metadata unavailable through the Worktree API.
+# The script performs read-only inspection. These capabilities do not enforce
+# filesystem limits or restrict the script supplied after "-e".
+[[capabilities]]
+kind = "process:exec"
+command = "*"
+args = ["-e", "*", "--", "ancestors", "*", "*"]
+
+[[capabilities]]
+kind = "process:exec"
+command = "*"
+args = ["-e", "*", "--", "executable", "*", "*"]
+
+[[capabilities]]
+kind = "process:exec"
+command = "*"
+args = ["-e", "*", "--", "global", "*", "vp"]
+
 [language_servers.oxlint]
 code_actions_kind = ["quickfix", "source.fixAll.oxc"]
 language = "JavaScript"
