@@ -17,6 +17,10 @@ impl ZedLspSupport for ZedOxfmtLsp {
         "oxfmt".to_string()
     }
 
+    fn get_vite_plus_subcommand(&self) -> &'static str {
+        "fmt"
+    }
+
     fn language_server_command(
         &self,
         language_server_id: &LanguageServerId,
@@ -25,10 +29,7 @@ impl ZedLspSupport for ZedOxfmtLsp {
         let settings = LspSettings::for_worktree(language_server_id.as_ref(), worktree)?;
         debug!("Oxfmt language_server_command LspSettings: {settings:?}");
 
-        let mut args = vec![
-            self.get_resolved_exe_path(worktree)?.to_string_lossy().to_string(),
-            "--lsp".to_string(),
-        ];
+        let mut args = self.get_server_args(worktree)?;
         let mut command = node_binary_path()?;
         let mut env = EnvVars::default();
         if let Some(binary) = settings.binary {
