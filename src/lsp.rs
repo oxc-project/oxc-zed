@@ -12,7 +12,8 @@ pub const OXLINT_SERVER_ID: &str = "oxlint";
 pub const OXFMT_SERVER_ID: &str = "oxfmt";
 
 pub trait ZedLspSupport: Send + Sync {
-    fn get_workspace_exe_path(&self, worktree: &Worktree) -> Result<Option<PathBuf>> {
+    /// Returns the exe path in the worktree, and whether it is `vp` of Vite+.
+    fn get_workspace_exe_path(&self, worktree: &Worktree) -> Result<Option<(PathBuf, bool)>> {
         // Reading files from node_modules doesn't seem to be possible now,
         // https://github.com/zed-industries/zed/issues/10760.
         // Instead we try to read the `package.json`, see if the package is installed
@@ -23,14 +24,17 @@ pub trait ZedLspSupport: Send + Sync {
         let workspace_root_path = worktree.root_path();
         let workspace_root = Path::new(workspace_root_path.as_str());
 
-        for package_dir in [package_name.as_str(), "vite-plus"] {
+        // Prefer `vite-plus`, which runs the tool through `vp` to read `vite.config.*`.
+        for (package_dir, exe_name) in
+            [("vite-plus", "vp"), (package_name.as_str(), package_name.as_str())]
+        {
             if package_json
                 .as_ref()
                 .is_some_and(|package_json| package_exists(package_json, package_dir))
             {
                 return self
-                    .get_exe_path_from(workspace_root, package_dir, package_name.as_str())
-                    .map(Some);
+                    .get_exe_path_from(workspace_root, package_dir, exe_name)
+                    .map(|path| Some((path, package_dir == "vite-plus")));
             }
         }
 
@@ -47,10 +51,15 @@ pub trait ZedLspSupport: Send + Sync {
         Ok(from.join("node_modules").join(package_dir).join("bin").join(exe_name))
     }
 
-    fn get_resolved_exe_path(&self, worktree: &Worktree) -> Result<PathBuf> {
-        if let Some(path) = self.get_workspace_exe_path(worktree)? {
+    fn get_server_args(&self, worktree: &Worktree) -> Result<Vec<String>> {
+        if let Some((path, vite_plus)) = self.get_workspace_exe_path(worktree)? {
             debug!("Found exe installation in worktree at path {path:?}");
-            return Ok(path);
+            let mut args = vec![path.to_string_lossy().to_string()];
+            if vite_plus {
+                args.push(self.get_vite_plus_subcommand().to_string());
+            }
+            args.push("--lsp".to_string());
+            return Ok(args);
         }
 
         let package_name = self.get_package_name();
@@ -58,12 +67,14 @@ pub trait ZedLspSupport: Send + Sync {
             env::current_dir().map_err(|err| err.to_string())?.as_path(),
             package_name.as_str(),
             package_name.as_str(),
-        );
+        )?;
         debug!("Using exe installation from extension at path {path:?}");
-        path
+        Ok(vec![path.to_string_lossy().to_string(), "--lsp".to_string()])
     }
 
     fn get_package_name(&self) -> String;
+
+    fn get_vite_plus_subcommand(&self) -> &'static str;
 
     fn language_server_command(
         &self,
