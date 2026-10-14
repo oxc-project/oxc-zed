@@ -44,6 +44,7 @@ languages = [
     "CSS",
     "SCSS",
     "Svelte",
+    "Astro",
     "LESS",
     "GraphQL",
     "Handlebars",
@@ -55,6 +56,7 @@ languages = [
 name = "Oxfmt Language Server"
 
 [language_servers.oxfmt.language_ids]
+"Astro" = "astro"
 "CSS" = "css"
 "GraphQL" = "graphql"
 "HTML" = "html"
