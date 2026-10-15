@@ -41,6 +41,7 @@ languages = [
     "JSON5",
     "JSONC",
     "HTML",
+    "Angular",
     "CSS",
     "SCSS",
     "Svelte",
@@ -56,6 +57,7 @@ languages = [
 name = "Oxfmt Language Server"
 
 [language_servers.oxfmt.language_ids]
+"Angular" = "angular"
 "Astro" = "astro"
 "CSS" = "css"
 "GraphQL" = "graphql"
