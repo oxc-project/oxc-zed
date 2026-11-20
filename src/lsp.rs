@@ -2,10 +2,11 @@ use log::debug;
 use std::env;
 use std::path::{Path, PathBuf};
 use zed_extension_api::serde_json::{Value, from_str};
+use zed_extension_api::settings::CommandSettings;
 use zed_extension_api::{
-    Command, LanguageServerId, LanguageServerInstallationStatus, Result, Worktree,
-    npm_install_package, npm_package_installed_version, npm_package_latest_version,
-    set_language_server_installation_status,
+    Command, EnvVars, LanguageServerId, LanguageServerInstallationStatus, Os, Result, Worktree,
+    current_platform, node_binary_path, npm_install_package, npm_package_installed_version,
+    npm_package_latest_version, set_language_server_installation_status,
 };
 
 pub const OXLINT_SERVER_ID: &str = "oxlint";
@@ -41,17 +42,55 @@ pub trait ZedLspSupport: Send + Sync {
         Ok(None)
     }
 
-    fn exe_exists(&self, worktree: &Worktree) -> Result<bool> {
-        Ok(self.get_workspace_exe_path(worktree)?.is_some())
-    }
-
     fn get_exe_path_from(&self, from: &Path, package_dir: &str, exe_name: &str) -> Result<PathBuf> {
         // Doesn't use `node_modules/.bin` due to PNPM storing bash scripts there
         // instead of Node.js scripts.
         Ok(from.join("node_modules").join(package_dir).join("bin").join(exe_name))
     }
 
-    fn get_server_args(&self, worktree: &Worktree) -> Result<Vec<String>> {
+    /// Builds the language server command from the `binary` settings.
+    ///
+    /// When `binary.path` and `binary.arguments` aren't set, this falls back to
+    /// [`Self::get_default_command`], with `binary.env` merged into its environment.
+    fn get_command(
+        &self,
+        language_server_id: &LanguageServerId,
+        worktree: &Worktree,
+        binary: Option<CommandSettings>,
+    ) -> Result<Command> {
+        let Some(CommandSettings { path, arguments, env }) = binary else {
+            return self.get_default_command(language_server_id, worktree);
+        };
+        let mut env: EnvVars = env.unwrap_or_default().into_iter().collect();
+        self.normalize_env(&mut env, worktree);
+
+        match (path, arguments) {
+            (Some(command), Some(args)) => Ok(Command { command, args, env }),
+            (None, None) => {
+                let mut command = self.get_default_command(language_server_id, worktree)?;
+                command
+                    .env
+                    .retain(|(name, _)| env.iter().all(|(override_name, _)| override_name != name));
+                command.env.extend(env);
+                Ok(command)
+            }
+            _ => Err(
+                "When supplying binary.arguments, binary.path must be supplied (or vice-versa)."
+                    .to_string(),
+            ),
+        }
+    }
+
+    /// Resolves the language server command, in order of precedence, from:
+    ///
+    /// 1. The package installed in the worktree (`vite-plus` or the tool itself).
+    /// 2. The executable on the worktree's `PATH`, e.g. provided by Nix, direnv or mise.
+    /// 3. The extension-managed npm installation, which is installed or updated if needed.
+    fn get_default_command(
+        &self,
+        language_server_id: &LanguageServerId,
+        worktree: &Worktree,
+    ) -> Result<Command> {
         if let Some((path, vite_plus)) = self.get_workspace_exe_path(worktree)? {
             debug!("Found exe installation in worktree at path {path:?}");
             let mut args = vec![path.to_string_lossy().to_string()];
@@ -59,18 +98,40 @@ pub trait ZedLspSupport: Send + Sync {
                 args.push(self.get_vite_plus_subcommand().to_string());
             }
             args.push("--lsp".to_string());
-            return Ok(args);
+            return Ok(Command { command: node_binary_path()?, args, env: EnvVars::default() });
         }
 
         let package_name = self.get_package_name();
+        // npm's `.cmd` shims on Windows can't be spawned directly, so only look for native executables.
+        let exe_name = match current_platform().0 {
+            Os::Windows => format!("{package_name}.exe"),
+            Os::Mac | Os::Linux => package_name.clone(),
+        };
+        if let Some(path) = worktree.which(exe_name.as_str()) {
+            debug!("Found exe in worktree PATH at path {path:?}");
+            return Ok(Command {
+                command: path,
+                args: vec!["--lsp".to_string()],
+                env: worktree.shell_env(),
+            });
+        }
+
+        self.update_extension_language_server_if_outdated(language_server_id)?;
         let path = self.get_exe_path_from(
             env::current_dir().map_err(|err| err.to_string())?.as_path(),
             package_name.as_str(),
             package_name.as_str(),
         )?;
         debug!("Using exe installation from extension at path {path:?}");
-        Ok(vec![path.to_string_lossy().to_string(), "--lsp".to_string()])
+        Ok(Command {
+            command: node_binary_path()?,
+            args: vec![path.to_string_lossy().to_string(), "--lsp".to_string()],
+            env: EnvVars::default(),
+        })
     }
+
+    /// Adjusts the environment variables from the `binary.env` setting.
+    fn normalize_env(&self, _env: &mut EnvVars, _worktree: &Worktree) {}
 
     fn get_package_name(&self) -> String;
 
