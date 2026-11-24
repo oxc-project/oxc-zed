@@ -1,9 +1,9 @@
 use crate::lsp::ZedLspSupport;
 use log::debug;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use zed_extension_api::serde_json::Value;
 use zed_extension_api::settings::LspSettings;
-use zed_extension_api::{Command, EnvVars, LanguageServerId, Result, Worktree, node_binary_path};
+use zed_extension_api::{Command, EnvVars, LanguageServerId, Result, Worktree};
 
 pub struct ZedOxlintLsp {}
 
@@ -30,28 +30,20 @@ impl ZedLspSupport for ZedOxlintLsp {
         let settings = LspSettings::for_worktree(language_server_id.as_ref(), worktree)?;
         debug!("Oxlint language_server_command LspSettings: {settings:?}");
 
-        let mut args = self.get_server_args(worktree)?;
-        let mut command = node_binary_path()?;
-        let mut env = EnvVars::default();
-        if let Some(binary) = settings.binary {
-            if (binary.path.is_some() && binary.arguments.is_none())
-                || (binary.path.is_none() && binary.arguments.is_some())
-            {
-                return Err(
-                    "When supplying binary.arguments, binary.path must be supplied (or vice-versa).".to_string(),
-                );
-            }
+        self.get_command(language_server_id, worktree, settings.binary)
+    }
 
-            if let Some(arguments) = binary.arguments {
-                args = arguments;
-            }
-            if let Some(path) = binary.path {
-                command = path;
-            }
-            env = normalize_env(binary.env, worktree)?;
+    fn normalize_env(&self, env: &mut EnvVars, worktree: &Worktree) {
+        // Resolve a relative `OXLINT_TSGOLINT_PATH` against the worktree root.
+        if let Some((_, tsgolint_path)) =
+            env.iter_mut().find(|(name, _)| name == "OXLINT_TSGOLINT_PATH")
+        {
+            let root_path = worktree.root_path();
+            *tsgolint_path = Path::new(root_path.as_str())
+                .join(tsgolint_path.as_str())
+                .to_string_lossy()
+                .to_string();
         }
-
-        Ok(Command { command, args, env })
     }
 
     fn language_server_initialization_options(
@@ -75,27 +67,4 @@ impl ZedLspSupport for ZedOxlintLsp {
 
         Ok(settings.initialization_options.as_ref().and_then(|v| v.get("settings").cloned()))
     }
-}
-
-#[expect(clippy::disallowed_types, reason = "HashMap comes from Zed API")]
-fn normalize_env(
-    env_map: Option<std::collections::HashMap<String, String>>,
-    worktree: &Worktree,
-) -> Result<EnvVars> {
-    let mut env = env_map.unwrap_or_default();
-    if let Some(tsgolint_path) = env.get_mut("OXLINT_TSGOLINT_PATH") {
-        let path_buf = PathBuf::from(tsgolint_path.as_str());
-
-        let resolved = if path_buf.is_absolute() {
-            path_buf
-        } else {
-            let root_path = worktree.root_path();
-            let worktree_root = Path::new(root_path.as_str());
-            worktree_root.join(&path_buf)
-        };
-
-        *tsgolint_path = resolved.to_string_lossy().to_string();
-    }
-
-    Ok(env.into_iter().collect())
 }

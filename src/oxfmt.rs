@@ -2,7 +2,7 @@ use crate::lsp::ZedLspSupport;
 use log::debug;
 use zed_extension_api::serde_json::Value;
 use zed_extension_api::settings::LspSettings;
-use zed_extension_api::{Command, EnvVars, LanguageServerId, Result, Worktree, node_binary_path};
+use zed_extension_api::{Command, LanguageServerId, Result, Worktree};
 
 pub struct ZedOxfmtLsp {}
 
@@ -29,28 +29,7 @@ impl ZedLspSupport for ZedOxfmtLsp {
         let settings = LspSettings::for_worktree(language_server_id.as_ref(), worktree)?;
         debug!("Oxfmt language_server_command LspSettings: {settings:?}");
 
-        let mut args = self.get_server_args(worktree)?;
-        let mut command = node_binary_path()?;
-        let mut env = EnvVars::default();
-        if let Some(binary) = settings.binary {
-            if (binary.path.is_some() && binary.arguments.is_none())
-                || (binary.path.is_none() && binary.arguments.is_some())
-            {
-                return Err(
-                    "When supplying binary.arguments, binary.path must be supplied (or vice-versa).".to_string(),
-                );
-            }
-
-            if let Some(arguments) = binary.arguments {
-                args = arguments;
-            }
-            if let Some(path) = binary.path {
-                command = path;
-            }
-            env = binary.env.unwrap_or_default().into_iter().collect();
-        }
-
-        Ok(Command { command, args, env })
+        self.get_command(language_server_id, worktree, settings.binary)
     }
 
     fn language_server_initialization_options(
